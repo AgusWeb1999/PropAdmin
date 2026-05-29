@@ -97,6 +97,11 @@ export function PaymentForm({ isOpen, onClose, onCreated }: Props) {
     .filter((c) => selectedCharges.includes(c.id))
     .reduce((sum, c) => sum + Number(c.amount) + Number(c.interestAmount), 0);
 
+  // Cuando cambia el total seleccionado, actualiza el campo monto (editable igual)
+  useEffect(() => {
+    if (selectedTotal > 0) setValue('amount', selectedTotal);
+  }, [selectedTotal, setValue]);
+
   const onSubmit = async (data: FormData) => {
     try {
       await api.post('/payments', {
@@ -199,12 +204,16 @@ export function PaymentForm({ isOpen, onClose, onCreated }: Props) {
 
         {/* Payment details */}
         <div className="grid grid-cols-2 gap-4">
-          <FormField label="Monto" error={errors.amount?.message} required>
+          <FormField
+            label="Monto"
+            error={errors.amount?.message}
+            required
+            hint={selectedTotal > 0 ? 'Auto-completado por cargos seleccionados — podés editarlo' : undefined}
+          >
             <input
               {...register('amount')}
               type="number"
               step="0.01"
-              value={selectedTotal > 0 ? selectedTotal : undefined}
               placeholder="0"
               className={inputClass(errors.amount?.message)}
             />
