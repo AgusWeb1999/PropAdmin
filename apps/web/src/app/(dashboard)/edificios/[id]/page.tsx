@@ -10,6 +10,7 @@ import { ResidentForm } from '@/components/residents/ResidentForm';
 import { AccountStatement } from '@/components/apartments/AccountStatement';
 import { api } from '@/lib/api';
 import { formatCurrency, cn } from '@/lib/utils';
+import { useToast } from '@/hooks/useToast';
 
 interface Resident { id: string; firstName: string; lastName: string; type: string; phone: string | null; email: string | null }
 interface Apartment {
@@ -30,6 +31,7 @@ type Tab = 'apartamentos' | 'residentes';
 export default function BuildingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const toast = useToast();
   const [building, setBuilding] = useState<Building | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -41,20 +43,35 @@ export default function BuildingDetailPage() {
     setExportingPdf(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/buildings/${id}/debt-report`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const fullUrl = `${apiUrl}/buildings/${id}/debt-report`;
+      const res = await fetch(fullUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error('Error al generar el reporte');
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
+      }
+      const contentType = res.headers.get('content-type') ?? '';
+      if (!contentType.includes('pdf')) {
+        const text = await res.text();
+        throw new Error(`Respuesta inesperada (${contentType}): ${text.slice(0, 200)}`);
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       const dateStr = new Date().toISOString().split('T')[0];
       a.download = `deudas_${building?.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${dateStr}.pdf`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch {
-      /* silently ignore */
+      toast.success('PDF generado correctamente');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error desconocido';
+      toast.error(`No se pudo descargar el reporte: ${msg}`);
+      console.error('[debt-report]', msg);
     } finally {
       setExportingPdf(false);
     }
