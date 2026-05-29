@@ -9,7 +9,20 @@ const transporter = nodemailer.createTransport({
     user: env.SMTP_USER,
     pass: env.SMTP_PASS,
   },
+  connectionTimeout: 10_000,   // 10s para conectar
+  greetingTimeout: 10_000,     // 10s para el saludo SMTP
+  socketTimeout: 15_000,       // 15s por operación
 });
+
+// Helper: falla con timeout si el mail tarda más de 20s
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timeout (${ms}ms): ${label}`)), ms)
+    ),
+  ]);
+}
 
 const METHOD_LABELS: Record<string, string> = {
   CASH: 'Efectivo',
@@ -40,7 +53,7 @@ export async function sendReceiptEmail(data: {
     day: '2-digit', month: 'long', year: 'numeric',
   }).format(data.date);
 
-  await transporter.sendMail({
+  await withTimeout(transporter.sendMail({
     from: env.EMAIL_FROM,
     to: data.to,
     subject: `Recibo de pago — ${data.buildingName} Apt ${data.aptNumber}`,
@@ -89,7 +102,7 @@ export async function sendReceiptEmail(data: {
       content: data.pdfBuffer,
       contentType: 'application/pdf',
     }],
-  });
+  }), 20_000, `receipt to ${data.to}`);
 }
 
 export async function sendDebtNotificationEmail(data: {
@@ -108,7 +121,7 @@ export async function sendDebtNotificationEmail(data: {
   const fmt = (n: number) => `${data.currency} ${n.toLocaleString('es-UY')}`;
   const today = new Intl.DateTimeFormat('es-UY', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date());
 
-  await transporter.sendMail({
+  await withTimeout(transporter.sendMail({
     from: env.EMAIL_FROM,
     to: data.to,
     subject: `Estado de cuenta — ${data.buildingName} Apt ${data.aptNumber}`,
@@ -145,5 +158,5 @@ export async function sendDebtNotificationEmail(data: {
       content: data.pdfBuffer,
       contentType: 'application/pdf',
     }],
-  });
+  }), 20_000, `debt notification to ${data.to}`);
 }
