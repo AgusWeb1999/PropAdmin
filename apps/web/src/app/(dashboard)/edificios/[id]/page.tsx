@@ -81,15 +81,19 @@ export default function BuildingDetailPage() {
     if (!confirm('¿Enviás el estado de cuenta por email a todos los residentes con deuda pendiente?')) return;
     setSendingEmails(true);
     try {
-      const result = await api.post<{ sent: number; skipped: number; errors: number }>(
+      const result = await api.post<{ sent: number; skipped: number; skippedNoEmail: number; skippedNoDebt: number; errors: number }>(
         `/buildings/${id}/notify-residents`, {}
       );
-      if (result.sent === 0) {
-        toast.success('Sin residentes con email y deuda pendiente para notificar');
+      if (result.sent === 0 && result.skippedNoEmail > 0) {
+        toast.error(`Ningún residente tiene email cargado (${result.skippedNoEmail} sin email)`);
+      } else if (result.sent === 0 && result.skippedNoDebt === result.skipped) {
+        toast.success('Todos los apartamentos están al día, no hay deudas pendientes');
+      } else if (result.sent === 0) {
+        toast.error('No se envió ningún email — revisá los logs de Render');
       } else {
         toast.success(
-          `${result.sent} email${result.sent !== 1 ? 's' : ''} enviado${result.sent !== 1 ? 's' : ''}` +
-          (result.skipped > 0 ? ` · ${result.skipped} sin email` : '') +
+          `✓ ${result.sent} email${result.sent !== 1 ? 's' : ''} enviado${result.sent !== 1 ? 's' : ''}` +
+          (result.skippedNoEmail > 0 ? ` · ${result.skippedNoEmail} sin email` : '') +
           (result.errors > 0 ? ` · ${result.errors} con error` : '')
         );
       }

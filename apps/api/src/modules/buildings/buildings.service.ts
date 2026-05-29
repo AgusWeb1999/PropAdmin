@@ -158,16 +158,16 @@ export async function notifyResidents(id: string, companyId: string): Promise<{ 
   });
   if (!building) throw new AppError('Edificio no encontrado', 404, 'NOT_FOUND');
 
-  let sent = 0, skipped = 0, errors = 0;
+  let sent = 0, skipped = 0, skippedNoEmail = 0, skippedNoDebt = 0, errors = 0;
 
   for (const apt of building.apartments) {
     const resident = apt.residents[0];
     const pendingCharges = apt.charges.filter(c => c.status !== 'PAID');
 
-    // Skip if no email or no pending charges
-    if (!resident?.email || pendingCharges.length === 0) {
-      skipped++;
-      continue;
+    if (pendingCharges.length === 0) { skippedNoDebt++; skipped++; continue; }
+    if (!resident?.email) {
+      console.log(`[notify] Apt ${apt.number}: no email for resident ${resident?.firstName ?? 'none'}`);
+      skippedNoEmail++; skipped++; continue;
     }
 
     const totalDebt = pendingCharges.reduce(
@@ -211,6 +211,7 @@ export async function notifyResidents(id: string, companyId: string): Promise<{ 
         pdfBuffer,
       });
 
+      console.log(`[notify] Sent to ${resident.email} (apt ${apt.number})`);
       sent++;
     } catch (err) {
       console.error(`[notify] Error sending to apt ${apt.number}:`, err);
@@ -218,7 +219,8 @@ export async function notifyResidents(id: string, companyId: string): Promise<{ 
     }
   }
 
-  return { sent, skipped, errors };
+  console.log(`[notify] Done — sent:${sent} skippedNoEmail:${skippedNoEmail} skippedNoDebt:${skippedNoDebt} errors:${errors}`);
+  return { sent, skipped, skippedNoEmail, skippedNoDebt, errors };
 }
 
 export async function getBuildingStats(id: string, companyId: string) {
