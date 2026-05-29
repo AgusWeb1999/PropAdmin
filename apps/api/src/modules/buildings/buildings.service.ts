@@ -81,6 +81,57 @@ export async function deleteBuilding(id: string, companyId: string) {
   return prisma.building.update({ where: { id }, data: { deletedAt: new Date() } });
 }
 
+export async function getDebtReportData(id: string, companyId: string) {
+  const building = await prisma.building.findFirst({
+    where: { id, companyId, deletedAt: null },
+    include: {
+      company: { select: { name: true } },
+      apartments: {
+        where: { deletedAt: null },
+        include: {
+          residents: {
+            where: { isActive: true, deletedAt: null },
+            select: { firstName: true, lastName: true },
+            take: 1,
+          },
+          charges: {
+            where: { deletedAt: null, status: { not: 'PAID' } },
+            select: { description: true, period: true, amount: true, interestAmount: true, status: true, dueDate: true },
+            orderBy: { dueDate: 'asc' },
+          },
+        },
+        orderBy: [{ floor: 'asc' }, { number: 'asc' }],
+      },
+    },
+  });
+  if (!building) throw new AppError('Edificio no encontrado', 404, 'NOT_FOUND');
+
+  return {
+    building: {
+      name: building.name,
+      address: building.address,
+      city: building.city,
+      currency: building.currency,
+      company: { name: building.company.name },
+    },
+    apartments: building.apartments.map((a) => ({
+      number: a.number,
+      floor: a.floor,
+      resident: a.residents[0]
+        ? `${a.residents[0].firstName} ${a.residents[0].lastName}`
+        : null,
+      charges: a.charges.map((c) => ({
+        description: c.description,
+        period: c.period,
+        amount: Number(c.amount),
+        interestAmount: Number(c.interestAmount),
+        status: c.status,
+        dueDate: c.dueDate,
+      })),
+    })),
+  };
+}
+
 export async function getBuildingStats(id: string, companyId: string) {
   const building = await prisma.building.findFirst({ where: { id, companyId, deletedAt: null } });
   if (!building) throw new AppError('Edificio no encontrado', 404, 'NOT_FOUND');

@@ -4,6 +4,7 @@ import { authenticate } from '../../middleware/auth.middleware';
 import { requireRole } from '../../middleware/rbac.middleware';
 import { asyncHandler } from '../../middleware/error.middleware';
 import * as buildingsService from './buildings.service';
+import { generateDebtReport } from '../../utils/pdf';
 
 const router = Router();
 router.use(authenticate);
@@ -37,6 +38,18 @@ router.get('/:id', asyncHandler(async (req, res) => {
 router.get('/:id/stats', asyncHandler(async (req, res) => {
   const data = await buildingsService.getBuildingStats(req.params.id, req.companyId!);
   res.json({ success: true, data });
+}));
+
+// GET /buildings/:id/debt-report  → PDF download
+router.get('/:id/debt-report', asyncHandler(async (req, res) => {
+  const data = await buildingsService.getDebtReportData(req.params.id, req.companyId!);
+  const safeFilename = data.building.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  const dateStr = new Date().toISOString().split('T')[0];
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="deudas_${safeFilename}_${dateStr}.pdf"`);
+  const doc = generateDebtReport(data);
+  doc.pipe(res);
+  doc.end();
 }));
 
 // POST /buildings

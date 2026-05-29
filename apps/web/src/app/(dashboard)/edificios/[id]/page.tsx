@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Plus, ArrowLeft, Home, Users, Receipt, MapPin } from 'lucide-react';
+import { Plus, ArrowLeft, Home, Users, Receipt, MapPin, Download } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -35,6 +35,30 @@ export default function BuildingDetailPage() {
   const [notFound, setNotFound] = useState(false);
   const [tab, setTab] = useState<Tab>('apartamentos');
   const [aptFormOpen, setAptFormOpen] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const downloadDebtReport = async () => {
+    setExportingPdf(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/buildings/${id}/debt-report`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Error al generar el reporte');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const dateStr = new Date().toISOString().split('T')[0];
+      a.download = `deudas_${building?.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${dateStr}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      /* silently ignore */
+    } finally {
+      setExportingPdf(false);
+    }
+  };
   const [resFormApt, setResFormApt] = useState<Apartment | null>(null);
   const [statementApt, setStatementApt] = useState<Apartment | null>(null);
 
@@ -91,14 +115,24 @@ export default function BuildingDetailPage() {
         title={building.name}
         subtitle={`${building.address}, ${building.city}`}
         actions={
-          tab === 'apartamentos' ? (
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setAptFormOpen(true)}
-              className="flex items-center gap-1.5 bg-slate-900 text-white text-sm font-medium px-3.5 py-2 rounded-lg hover:bg-slate-800 transition-colors"
+              onClick={downloadDebtReport}
+              disabled={exportingPdf}
+              className="flex items-center gap-1.5 border border-gray-200 text-slate-600 text-sm font-medium px-3.5 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-60"
             >
-              <Plus className="w-3.5 h-3.5" /> Nuevo apartamento
+              <Download className={`w-3.5 h-3.5 ${exportingPdf ? 'animate-bounce' : ''}`} />
+              {exportingPdf ? 'Generando...' : 'Exportar deudas'}
             </button>
-          ) : null
+            {tab === 'apartamentos' && (
+              <button
+                onClick={() => setAptFormOpen(true)}
+                className="flex items-center gap-1.5 bg-slate-900 text-white text-sm font-medium px-3.5 py-2 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" /> Nuevo apartamento
+              </button>
+            )}
+          </div>
         }
       />
 

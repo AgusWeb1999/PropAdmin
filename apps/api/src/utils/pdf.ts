@@ -104,6 +104,127 @@ export function generateReceiptBuffer(data: ReceiptData): Promise<Buffer> {
   });
 }
 
+// ── Debt Report (all apartments in a building) ────────────────────────────
+export type DebtReportData = {
+  building: {
+    name: string;
+    address: string;
+    city: string;
+    currency: string;
+    company: { name: string };
+  };
+  apartments: Array<{
+    number: string;
+    floor: string | null;
+    resident: string | null;
+    charges: Array<{
+      description: string;
+      period: string;
+      amount: number;
+      interestAmount: number;
+      status: string;
+      dueDate: Date;
+    }>;
+  }>;
+};
+
+export function generateDebtReport(data: DebtReportData): PDFKit.PDFDocument {
+  const doc = new PDFDocument({ size: 'A4', margin: 40 });
+  const { building } = data;
+  const currency = building.currency ?? 'UYU';
+  const fmt = (n: number) => `${currency} ${n.toLocaleString('es-UY', { minimumFractionDigits: 0 })}`;
+  const today = new Date().toLocaleDateString('es-UY', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  // Header
+  doc.fontSize(16).font('Helvetica-Bold').text(building.company.name, { align: 'center' });
+  doc.fontSize(9).font('Helvetica').fillColor('#666')
+    .text(`${building.name} — ${building.address}, ${building.city}`, { align: 'center' });
+  doc.fontSize(9).font('Helvetica').text(`Generado el ${today}`, { align: 'center' }).fillColor('#000');
+  doc.moveDown(0.5);
+  doc.fontSize(14).font('Helvetica-Bold').text('REPORTE DE DEUDAS — GASTOS COMUNES', { align: 'center' });
+  doc.moveDown(0.5);
+  doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor('#000').stroke().moveDown(0.6);
+
+  // Table header
+  const cols = { apt: 40, floor: 80, resident: 120, desc: 240, period: 355, principal: 415, interest: 468, total: 515 };
+  const rowH = 14;
+
+  doc.font('Helvetica-Bold').fontSize(8).fillColor('#444');
+  doc.text('APT', cols.apt, doc.y, { width: 35 });
+  doc.text('PISO', cols.floor, doc.y, { width: 35 });
+  doc.text('RESIDENTE', cols.resident, doc.y, { width: 115 });
+  doc.text('DESCRIPCIÓN', cols.desc, doc.y, { width: 110 });
+  doc.text('PERÍODO', cols.period, doc.y, { width: 55 });
+  doc.text('PRINCIPAL', cols.principal, doc.y, { width: 48, align: 'right' });
+  doc.text('INTERÉS', cols.interest, doc.y, { width: 42, align: 'right' });
+  doc.text('TOTAL', cols.total, doc.y, { width: 40, align: 'right' });
+  doc.moveDown(0.3);
+  doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor('#ccc').stroke().moveDown(0.3);
+  doc.fillColor('#000');
+
+  let grandTotal = 0;
+  let rowIndex = 0;
+
+  for (const apt of data.apartments) {
+    const pendingCharges = apt.charges.filter(c => c.status !== 'PAID');
+    if (pendingCharges.length === 0) continue;
+
+    const aptTotal = pendingCharges.reduce((s, c) => s + c.amount + c.interestAmount, 0);
+    grandTotal += aptTotal;
+
+    const startY = doc.y;
+    const aptLabel = apt.number;
+    const floorLabel = apt.floor ?? '—';
+    const residentLabel = apt.resident ?? '—';
+
+    // Alternating row bg
+    if (rowIndex % 2 === 0) {
+      doc.rect(40, startY - 2, 515, pendingCharges.length * rowH + 4).fillColor('#f8f8f8').fill();
+      doc.fillColor('#000');
+    }
+
+    pendingCharges.forEach((charge, idx) => {
+      const y = startY + idx * rowH;
+      doc.font('Helvetica').fontSize(8);
+      if (idx === 0) {
+        doc.text(aptLabel, cols.apt, y, { width: 35 });
+        doc.text(floorLabel, cols.floor, y, { width: 35 });
+        doc.text(residentLabel, cols.resident, y, { width: 115 });
+      }
+      doc.text(charge.description, cols.desc, y, { width: 110 });
+      doc.text(charge.period, cols.period, y, { width: 55 });
+      doc.font('Helvetica').fontSize(8)
+        .text(fmt(charge.amount), cols.principal, y, { width: 48, align: 'right' });
+      doc.text(
+        charge.interestAmount > 0 ? fmt(charge.interestAmount) : '—',
+        cols.interest, y, { width: 42, align: 'right' }
+      );
+      doc.font(idx === pendingCharges.length - 1 ? 'Helvetica-Bold' : 'Helvetica').fontSize(8)
+        .text(idx === pendingCharges.length - 1 ? fmt(aptTotal) : '', cols.total, y, { width: 40, align: 'right' });
+    });
+
+    doc.y = startY + pendingCharges.length * rowH + 4;
+    doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor('#eee').stroke();
+    doc.moveDown(0.2);
+    rowIndex++;
+
+    // New page if needed
+    if (doc.y > 750) doc.addPage();
+  }
+
+  // Footer total
+  doc.moveDown(0.5);
+  doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor('#000').stroke().moveDown(0.5);
+  doc.fontSize(12).font('Helvetica-Bold')
+    .text('TOTAL DEUDA PENDIENTE:', 40, doc.y)
+    .text(fmt(grandTotal), 0, doc.y, { align: 'right' });
+  doc.moveDown(0.5);
+  doc.fontSize(8).font('Helvetica').fillColor('#888')
+    .text(`Incluye solo cargos pendientes (PENDING, OVERDUE, PARTIAL) al ${today}`, { align: 'center' });
+
+  return doc;
+}
+
 // ── Account Statement ─────────────────────────────────────────────────────
 export function generateAccountStatement(data: {
   apartment: {
