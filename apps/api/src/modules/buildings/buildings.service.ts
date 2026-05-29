@@ -134,7 +134,7 @@ export async function getDebtReportData(id: string, companyId: string) {
   };
 }
 
-export async function notifyResidents(id: string, companyId: string): Promise<{ sent: number; skipped: number; errors: number }> {
+export async function notifyResidents(id: string, companyId: string): Promise<{ sent: number; skipped: number; skippedNoEmail: number; skippedNoDebt: number; errors: number }> {
   const building = await prisma.building.findFirst({
     where: { id, companyId, deletedAt: null },
     include: {
