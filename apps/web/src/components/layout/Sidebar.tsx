@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import {
   Building2, LayoutDashboard, Home, Users, Receipt,
   CreditCard, AlertTriangle, Calendar, Wrench, FileText,
-  Megaphone, LogOut, ChevronRight,
+  Megaphone, LogOut, ChevronRight, UserCog,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,6 +21,7 @@ const NAV_ITEMS = [
   { label: 'Mantenimiento', href: '/mantenimiento', icon: Wrench },
   { label: 'Comunicados', href: '/comunicados', icon: Megaphone },
   { label: 'Documentos', href: '/documentos', icon: FileText },
+  { label: 'Usuarios', href: '/usuarios', icon: UserCog },
 ];
 
 export function Sidebar() {

@@ -19,6 +19,7 @@ import dashboardRouter from './modules/dashboard/dashboard.router';
 import maintenanceRouter from './modules/maintenance/maintenance.router';
 import documentsRouter from './modules/documents/documents.router';
 import announcementsRouter from './modules/announcements/announcements.router';
+import usersRouter from './modules/users/users.router';
 
 const app = express();
 
@@ -63,6 +64,7 @@ v1.use('/maintenance',   maintenanceRouter);
 v1.use('/documents',     documentsRouter);
 v1.use('/announcements', announcementsRouter);
 v1.use('/dashboard',     dashboardRouter);
+v1.use('/users',         usersRouter);
 
 app.use('/api/v1', v1);
 

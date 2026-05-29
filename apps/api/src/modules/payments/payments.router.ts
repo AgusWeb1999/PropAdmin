@@ -4,7 +4,8 @@ import { authenticate } from '../../middleware/auth.middleware';
 import { requireRole } from '../../middleware/rbac.middleware';
 import { asyncHandler } from '../../middleware/error.middleware';
 import * as paymentsService from './payments.service';
-import { generateReceipt } from '../../utils/pdf';
+import { generateReceipt, generateReceiptBuffer } from '../../utils/pdf';
+import { sendReceiptEmail } from '../../utils/email';
 
 const router = Router();
 router.use(authenticate);
@@ -26,6 +27,40 @@ router.post('/', requireRole('EMPLOYEE'), asyncHandler(async (req, res) => {
     ...data,
     date: new Date(data.date),
   });
+
+  // Enviar recibo por email de forma asíncrona (no bloquea la respuesta)
+  paymentsService.getReceiptData(payment.id, req.companyId!).then(async (raw) => {
+    const residentEmail = raw.resident.email;
+    if (!residentEmail) return;
+
+    const receiptData = {
+      ...raw,
+      amount: Number(raw.amount),
+      paymentCharges: raw.paymentCharges.map((pc) => ({
+        ...pc,
+        amount: Number(pc.amount),
+        charge: { ...pc.charge, amount: Number(pc.charge.amount) },
+      })),
+    };
+
+    const pdfBuffer = await generateReceiptBuffer(receiptData);
+    await sendReceiptEmail({
+      to: residentEmail,
+      residentName: `${raw.resident.firstName} ${raw.resident.lastName}`,
+      buildingName: raw.resident.apartment.building.name,
+      aptNumber: raw.resident.apartment.number,
+      amount: Number(raw.amount),
+      date: raw.date,
+      reference: raw.reference,
+      method: raw.method,
+      companyName: raw.resident.apartment.building.company.name,
+      pdfBuffer,
+      paymentId: payment.id,
+    });
+  }).catch((err) => {
+    console.error('Email send error (non-blocking):', err.message);
+  });
+
   res.status(201).json({ success: true, data: payment });
 }));
 
@@ -56,7 +91,6 @@ router.get('/delinquents', asyncHandler(async (req, res) => {
 // GET /payments/:id/receipt (PDF)
 router.get('/:id/receipt', asyncHandler(async (req, res) => {
   const raw = await paymentsService.getReceiptData(req.params.id, req.companyId!);
-  // Prisma returns Decimal for amount fields — cast to number for PDF generator
   const data = {
     ...raw,
     amount: Number(raw.amount),
@@ -66,7 +100,7 @@ router.get('/:id/receipt', asyncHandler(async (req, res) => {
       charge: { ...pc.charge, amount: Number(pc.charge.amount) },
     })),
   };
-  const pdf = await generateReceipt(data);
+  const pdf = generateReceipt(data);
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="recibo-${req.params.id}.pdf"`);
   pdf.pipe(res);

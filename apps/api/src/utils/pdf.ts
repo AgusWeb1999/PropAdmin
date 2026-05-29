@@ -1,6 +1,6 @@
 import PDFDocument from 'pdfkit';
 
-type ReceiptData = {
+export type ReceiptData = {
   id: string;
   amount: number | string;
   method: string;
@@ -33,44 +33,24 @@ const METHOD_LABELS: Record<string, string> = {
   OTHER: 'Otro',
 };
 
-export function generateReceipt(data: ReceiptData): PDFKit.PDFDocument {
-  const doc = new PDFDocument({ size: 'A4', margin: 50 });
-
+// ── Shared content writer ──────────────────────────────────────────────────
+function writeReceiptContent(doc: PDFKit.PDFDocument, data: ReceiptData) {
   const company = data.resident.apartment.building.company;
   const building = data.resident.apartment.building;
   const resident = data.resident;
 
-  // ── Header ────────────────────────────────────────
-  doc
-    .fontSize(20)
-    .font('Helvetica-Bold')
-    .text(company.name, { align: 'center' })
-    .moveDown(0.3);
-
-  doc
-    .fontSize(10)
-    .font('Helvetica')
-    .text(`Edificio: ${building.name} — ${building.address}`, { align: 'center' })
-    .moveDown(1);
-
-  doc
-    .fontSize(16)
-    .font('Helvetica-Bold')
-    .text('RECIBO DE PAGO', { align: 'center' })
-    .moveDown(0.5);
-
-  // ── Divider ───────────────────────────────────────
+  doc.fontSize(20).font('Helvetica-Bold').text(company.name, { align: 'center' }).moveDown(0.3);
+  doc.fontSize(10).font('Helvetica').text(`Edificio: ${building.name} — ${building.address}`, { align: 'center' }).moveDown(1);
+  doc.fontSize(16).font('Helvetica-Bold').text('RECIBO DE PAGO', { align: 'center' }).moveDown(0.5);
   doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke().moveDown(0.5);
 
-  // ── Payment details ───────────────────────────────
   const left = 50;
-  const right = 300;
   const lineH = 20;
   let y = doc.y;
 
-  const field = (label: string, value: string, col = left) => {
-    doc.font('Helvetica-Bold').fontSize(10).text(label, col, y);
-    doc.font('Helvetica').fontSize(10).text(value, col + 120, y);
+  const field = (label: string, value: string) => {
+    doc.font('Helvetica-Bold').fontSize(10).text(label, left, y);
+    doc.font('Helvetica').fontSize(10).text(value, left + 120, y);
     y += lineH;
   };
 
@@ -82,14 +62,11 @@ export function generateReceipt(data: ReceiptData): PDFKit.PDFDocument {
   if (data.reference) field('Referencia:', data.reference);
 
   doc.moveDown(1).moveTo(50, doc.y).lineTo(545, doc.y).stroke().moveDown(0.5);
-
-  // ── Charges table ─────────────────────────────────
   doc.font('Helvetica-Bold').fontSize(11).text('Detalle de cargos aplicados', left, doc.y).moveDown(0.5);
 
   if (data.paymentCharges.length > 0) {
     for (const pc of data.paymentCharges) {
-      doc
-        .font('Helvetica').fontSize(10)
+      doc.font('Helvetica').fontSize(10)
         .text(`• ${pc.charge.description} (${pc.charge.period})`, left, doc.y, { width: 360 })
         .font('Helvetica-Bold')
         .text(`$${Number(pc.amount).toLocaleString('es-UY')}`, 420, doc.y, { align: 'right' })
@@ -98,28 +75,36 @@ export function generateReceipt(data: ReceiptData): PDFKit.PDFDocument {
   }
 
   doc.moveDown(0.5).moveTo(50, doc.y).lineTo(545, doc.y).stroke().moveDown(0.5);
-
-  // ── Total ─────────────────────────────────────────
-  doc
-    .fontSize(14)
-    .font('Helvetica-Bold')
+  doc.fontSize(14).font('Helvetica-Bold')
     .text('TOTAL PAGADO:', left, doc.y)
     .text(`$${Number(data.amount).toLocaleString('es-UY')}`, 420, doc.y, { align: 'right' })
     .moveDown(2);
 
-  if (data.notes) {
-    doc.fontSize(9).font('Helvetica').text(`Obs: ${data.notes}`, left);
-  }
+  if (data.notes) doc.fontSize(9).font('Helvetica').text(`Obs: ${data.notes}`, left);
+  doc.fontSize(8).font('Helvetica').text('Este recibo es comprobante válido de pago.', left, 750, { align: 'center' });
+}
 
-  // ── Footer ────────────────────────────────────────
-  doc
-    .fontSize(8)
-    .font('Helvetica')
-    .text('Este recibo es comprobante válido de pago.', left, 750, { align: 'center' });
-
+// ── Returns stream (for HTTP response) ────────────────────────────────────
+export function generateReceipt(data: ReceiptData): PDFKit.PDFDocument {
+  const doc = new PDFDocument({ size: 'A4', margin: 50 });
+  writeReceiptContent(doc, data);
   return doc;
 }
 
+// ── Returns buffer (for email attachment) ─────────────────────────────────
+export function generateReceiptBuffer(data: ReceiptData): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const chunks: Buffer[] = [];
+    doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+    writeReceiptContent(doc, data);
+    doc.end();
+  });
+}
+
+// ── Account Statement ─────────────────────────────────────────────────────
 export function generateAccountStatement(data: {
   apartment: {
     number: string;
@@ -152,7 +137,6 @@ export function generateAccountStatement(data: {
 
   doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke().moveDown(0.5);
 
-  // Table header
   const cols = [50, 200, 310, 400, 490];
   doc.font('Helvetica-Bold').fontSize(9);
   ['Período', 'Descripción', 'Importe', 'Interés', 'Estado'].forEach((h, i) => {
@@ -164,7 +148,6 @@ export function generateAccountStatement(data: {
   for (const charge of apartment.charges) {
     const total = Number(charge.amount) + Number(charge.interestAmount);
     if (charge.status !== 'PAID') totalDebt += total;
-
     const y = doc.y;
     doc.font('Helvetica').fontSize(9);
     doc.text(charge.period, cols[0], y, { width: 145 });

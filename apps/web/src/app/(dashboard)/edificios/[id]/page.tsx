@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/Header';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { ApartmentForm } from '@/components/apartments/ApartmentForm';
 import { ResidentForm } from '@/components/residents/ResidentForm';
+import { AccountStatement } from '@/components/apartments/AccountStatement';
 import { api } from '@/lib/api';
 import { formatCurrency, cn } from '@/lib/utils';
 
@@ -35,6 +36,7 @@ export default function BuildingDetailPage() {
   const [tab, setTab] = useState<Tab>('apartamentos');
   const [aptFormOpen, setAptFormOpen] = useState(false);
   const [resFormApt, setResFormApt] = useState<Apartment | null>(null);
+  const [statementApt, setStatementApt] = useState<Apartment | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -188,12 +190,20 @@ export default function BuildingDetailPage() {
                           }
                         </td>
                         <td className="px-4 py-3">
-                          <button
-                            onClick={() => setResFormApt(apt)}
-                            className="text-xs text-slate-500 hover:text-slate-900 hover:bg-gray-100 px-2 py-1 rounded-md transition-colors"
-                          >
-                            + Residente
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => setStatementApt(apt)}
+                              className="text-xs text-slate-500 hover:text-slate-900 hover:bg-gray-100 px-2 py-1 rounded-md transition-colors"
+                            >
+                              Estado
+                            </button>
+                            <button
+                              onClick={() => setResFormApt(apt)}
+                              className="text-xs text-slate-500 hover:text-slate-900 hover:bg-gray-100 px-2 py-1 rounded-md transition-colors"
+                            >
+                              + Res.
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -252,6 +262,13 @@ export default function BuildingDetailPage() {
           onCreated={load}
           apartmentId={resFormApt.id}
           apartmentNumber={resFormApt.number}
+        />
+      )}
+      {statementApt && (
+        <AccountStatement
+          apartmentId={statementApt.id}
+          aptNumber={statementApt.number}
+          onClose={() => setStatementApt(null)}
         />
       )}
     </>
