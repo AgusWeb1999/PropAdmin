@@ -23,6 +23,9 @@ import usersRouter from './modules/users/users.router';
 
 const app = express();
 
+// Render (y cualquier reverse proxy) pone la IP real en X-Forwarded-For
+app.set('trust proxy', 1);
+
 // ── Security & perf middleware ──────────────────────────────
 app.use(helmet());
 app.use(compression());
