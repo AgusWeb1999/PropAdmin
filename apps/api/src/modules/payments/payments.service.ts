@@ -51,10 +51,15 @@ export async function registerPayment(
         if (!charge || charge.status === 'PAID') continue;
 
         const totalOwed = Number(charge.amount) + Number(charge.interestAmount);
-        const applied = Math.min(remaining, totalOwed);
+        const alreadyPaid = Number(charge.paidAmount);
+        const stillOwed = totalOwed - alreadyPaid;
+        if (stillOwed <= 0) continue;
+
+        const applied = Math.min(remaining, stillOwed);
         remaining -= applied;
 
-        const newStatus = applied >= totalOwed ? 'PAID' : 'PARTIAL';
+        const newPaidAmount = alreadyPaid + applied;
+        const newStatus = newPaidAmount >= totalOwed ? 'PAID' : 'PARTIAL';
 
         await Promise.all([
           tx.paymentCharge.create({
@@ -62,7 +67,7 @@ export async function registerPayment(
           }),
           tx.charge.update({
             where: { id: chargeId },
-            data: { status: newStatus },
+            data: { status: newStatus, paidAmount: newPaidAmount },
           }),
         ]);
       }

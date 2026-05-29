@@ -106,7 +106,7 @@ export function PaymentForm({ isOpen, onClose, onCreated }: Props) {
     try {
       await api.post('/payments', {
         residentId: data.residentId,
-        amount: selectedTotal > 0 ? selectedTotal : data.amount,
+        amount: data.amount,
         method: data.method,
         reference: data.reference,
         date: new Date(data.date).toISOString(),

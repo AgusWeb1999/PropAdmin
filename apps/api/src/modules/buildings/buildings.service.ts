@@ -24,7 +24,7 @@ export async function getBuildingById(id: string, companyId: string) {
           },
           charges: {
             where: { deletedAt: null, status: { not: 'PAID' } },
-            select: { id: true, amount: true, interestAmount: true, status: true },
+            select: { id: true, amount: true, interestAmount: true, paidAmount: true, status: true },
           },
         },
         orderBy: [{ floor: 'asc' }, { number: 'asc' }],
@@ -123,8 +123,8 @@ export async function getDebtReportData(id: string, companyId: string) {
       charges: a.charges.map((c) => ({
         description: c.description,
         period: c.period,
-        amount: Number(c.amount),
-        interestAmount: Number(c.interestAmount),
+        amount: Number(c.amount) + Number(c.interestAmount) - Number(c.paidAmount),
+        interestAmount: 0,
         status: c.status,
         dueDate: c.dueDate,
       })),

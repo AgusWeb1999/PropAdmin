@@ -17,7 +17,7 @@ interface Apartment {
   id: string; number: string; floor: string | null; coefficient: number;
   status: string; area: number | null; hasParking: boolean; hasStorage: boolean;
   residents: Resident[];
-  charges: Array<{ amount: number; interestAmount: number; status: string }>;
+  charges: Array<{ amount: number; interestAmount: number; paidAmount: number; status: string }>;
 }
 interface Building {
   id: string; name: string; address: string; city: string; totalUnits: number;
@@ -123,7 +123,7 @@ export default function BuildingDetailPage() {
 
   const totalDebt = building.apartments.reduce((sum, a) =>
     sum + (a.charges ?? []).filter(c => c.status !== 'PAID')
-      .reduce((s, c) => s + Number(c.amount) + Number(c.interestAmount), 0), 0
+      .reduce((s, c) => s + Number(c.amount) + Number(c.interestAmount) - Number(c.paidAmount ?? 0), 0), 0
   );
 
   return (
@@ -220,7 +220,7 @@ export default function BuildingDetailPage() {
                 <tbody className="divide-y divide-gray-50">
                   {building.apartments.map((apt) => {
                     const debt = (apt.charges ?? []).filter(c => c.status !== 'PAID')
-                      .reduce((s, c) => s + Number(c.amount) + Number(c.interestAmount), 0);
+                      .reduce((s, c) => s + Number(c.amount) + Number(c.interestAmount) - Number(c.paidAmount ?? 0), 0);
                     const resident = apt.residents[0];
                     return (
                       <tr key={apt.id} className="hover:bg-gray-50 transition-colors">
