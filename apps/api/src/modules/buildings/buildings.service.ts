@@ -96,7 +96,7 @@ export async function getDebtReportData(id: string, companyId: string) {
           },
           charges: {
             where: { deletedAt: null, status: { not: 'PAID' } },
-            select: { description: true, period: true, amount: true, interestAmount: true, status: true, dueDate: true },
+            select: { description: true, period: true, amount: true, interestAmount: true, paidAmount: true, status: true, dueDate: true },
             orderBy: { dueDate: 'asc' },
           },
         },
