@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Plus, ArrowLeft, Home, Users, Receipt, MapPin, Download } from 'lucide-react';
+import { Plus, ArrowLeft, Home, Users, Receipt, MapPin, Download, Mail, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -38,6 +38,7 @@ export default function BuildingDetailPage() {
   const [tab, setTab] = useState<Tab>('apartamentos');
   const [aptFormOpen, setAptFormOpen] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [sendingEmails, setSendingEmails] = useState(false);
 
   const downloadDebtReport = async () => {
     setExportingPdf(true);
@@ -76,6 +77,29 @@ export default function BuildingDetailPage() {
       setExportingPdf(false);
     }
   };
+  const notifyResidents = async () => {
+    if (!confirm('¿Enviás el estado de cuenta por email a todos los residentes con deuda pendiente?')) return;
+    setSendingEmails(true);
+    try {
+      const result = await api.post<{ sent: number; skipped: number; errors: number }>(
+        `/buildings/${id}/notify-residents`, {}
+      );
+      if (result.sent === 0) {
+        toast.success('Sin residentes con email y deuda pendiente para notificar');
+      } else {
+        toast.success(
+          `${result.sent} email${result.sent !== 1 ? 's' : ''} enviado${result.sent !== 1 ? 's' : ''}` +
+          (result.skipped > 0 ? ` · ${result.skipped} sin email` : '') +
+          (result.errors > 0 ? ` · ${result.errors} con error` : '')
+        );
+      }
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Error al enviar emails');
+    } finally {
+      setSendingEmails(false);
+    }
+  };
+
   const [resFormApt, setResFormApt] = useState<Apartment | null>(null);
   const [statementApt, setStatementApt] = useState<Apartment | null>(null);
 
@@ -133,6 +157,16 @@ export default function BuildingDetailPage() {
         subtitle={`${building.address}, ${building.city}`}
         actions={
           <div className="flex items-center gap-2">
+            <button
+              onClick={notifyResidents}
+              disabled={sendingEmails}
+              className="flex items-center gap-1.5 border border-gray-200 text-slate-600 text-sm font-medium px-3.5 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-60"
+            >
+              {sendingEmails
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <Mail className="w-3.5 h-3.5" />}
+              {sendingEmails ? 'Enviando...' : 'Enviar emails'}
+            </button>
             <button
               onClick={downloadDebtReport}
               disabled={exportingPdf}

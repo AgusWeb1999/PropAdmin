@@ -91,3 +91,59 @@ export async function sendReceiptEmail(data: {
     }],
   });
 }
+
+export async function sendDebtNotificationEmail(data: {
+  to: string;
+  residentName: string;
+  buildingName: string;
+  aptNumber: string;
+  companyName: string;
+  totalDebt: number;
+  chargeCount: number;
+  currency: string;
+  pdfBuffer: Buffer;
+}) {
+  if (!env.SMTP_USER || !env.SMTP_PASS) return;
+
+  const fmt = (n: number) => `${data.currency} ${n.toLocaleString('es-UY')}`;
+  const today = new Intl.DateTimeFormat('es-UY', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date());
+
+  await transporter.sendMail({
+    from: env.EMAIL_FROM,
+    to: data.to,
+    subject: `Estado de cuenta — ${data.buildingName} Apt ${data.aptNumber}`,
+    html: `
+      <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; background: #fff; padding: 32px; border-radius: 12px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <div style="display: inline-block; background: #0f172a; color: white; width: 40px; height: 40px; border-radius: 10px; line-height: 40px; font-size: 20px; text-align: center;">🏢</div>
+          <h1 style="font-size: 20px; font-weight: 700; color: #0f172a; margin: 12px 0 4px;">${data.companyName}</h1>
+          <p style="color: #94a3b8; font-size: 13px; margin: 0;">Estado de cuenta — ${today}</p>
+        </div>
+
+        <div style="background: #f8fafc; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
+          <p style="margin: 0 0 4px; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Residente</p>
+          <p style="margin: 0; color: #0f172a; font-weight: 600; font-size: 16px;">${data.residentName}</p>
+          <p style="margin: 4px 0 0; color: #64748b; font-size: 13px;">${data.buildingName} · Apartamento ${data.aptNumber}</p>
+        </div>
+
+        <div style="background: #fef2f2; border-radius: 10px; padding: 20px; margin-bottom: 20px; text-align: center;">
+          <p style="margin: 0 0 4px; color: #ef4444; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Saldo pendiente</p>
+          <p style="margin: 0; color: #dc2626; font-weight: 700; font-size: 28px;">${fmt(data.totalDebt)}</p>
+          <p style="margin: 4px 0 0; color: #f87171; font-size: 13px;">${data.chargeCount} cargo${data.chargeCount !== 1 ? 's' : ''} pendiente${data.chargeCount !== 1 ? 's' : ''}</p>
+        </div>
+
+        <p style="color: #64748b; font-size: 14px; text-align: center; margin: 0 0 8px;">
+          El estado de cuenta detallado está adjunto como PDF.
+        </p>
+        <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
+          Ante cualquier consulta, comunicate con la administración.
+        </p>
+      </div>
+    `,
+    attachments: [{
+      filename: `estado-cuenta-apt${data.aptNumber}.pdf`,
+      content: data.pdfBuffer,
+      contentType: 'application/pdf',
+    }],
+  });
+}

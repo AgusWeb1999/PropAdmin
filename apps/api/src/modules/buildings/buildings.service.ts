@@ -1,5 +1,7 @@
 import { prisma } from '../../prisma/client';
 import { AppError } from '../../middleware/error.middleware';
+import { generateAccountStatement } from '../../utils/pdf';
+import { sendDebtNotificationEmail } from '../../utils/email';
 
 export async function getBuildings(companyId: string) {
   return prisma.building.findMany({
@@ -130,6 +132,93 @@ export async function getDebtReportData(id: string, companyId: string) {
       })),
     })),
   };
+}
+
+export async function notifyResidents(id: string, companyId: string): Promise<{ sent: number; skipped: number; errors: number }> {
+  const building = await prisma.building.findFirst({
+    where: { id, companyId, deletedAt: null },
+    include: {
+      company: { select: { name: true } },
+      apartments: {
+        where: { deletedAt: null },
+        include: {
+          residents: {
+            where: { isActive: true, deletedAt: null, email: { not: null } },
+            select: { firstName: true, lastName: true, email: true },
+            take: 1,
+          },
+          charges: {
+            where: { deletedAt: null, status: { not: 'PAID' } },
+            select: { description: true, period: true, amount: true, interestAmount: true, paidAmount: true, status: true, dueDate: true },
+            orderBy: { dueDate: 'asc' },
+          },
+        },
+      },
+    },
+  });
+  if (!building) throw new AppError('Edificio no encontrado', 404, 'NOT_FOUND');
+
+  let sent = 0, skipped = 0, errors = 0;
+
+  for (const apt of building.apartments) {
+    const resident = apt.residents[0];
+    const pendingCharges = apt.charges.filter(c => c.status !== 'PAID');
+
+    // Skip if no email or no pending charges
+    if (!resident?.email || pendingCharges.length === 0) {
+      skipped++;
+      continue;
+    }
+
+    const totalDebt = pendingCharges.reduce(
+      (s, c) => s + Number(c.amount) + Number(c.interestAmount) - Number(c.paidAmount), 0
+    );
+
+    try {
+      // Generate per-apartment statement PDF
+      const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
+        const doc = generateAccountStatement({
+          apartment: {
+            number: apt.number,
+            building: { name: building.name, address: building.address, company: { name: building.company.name } },
+            residents: [{ firstName: resident.firstName, lastName: resident.lastName }],
+            charges: pendingCharges.map(c => ({
+              description: c.description,
+              period: c.period,
+              amount: Number(c.amount),
+              interestAmount: Number(c.interestAmount),
+              status: c.status,
+              dueDate: c.dueDate,
+            })),
+          },
+        });
+        const chunks: Buffer[] = [];
+        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+        doc.end();
+      });
+
+      await sendDebtNotificationEmail({
+        to: resident.email,
+        residentName: `${resident.firstName} ${resident.lastName}`,
+        buildingName: building.name,
+        aptNumber: apt.number,
+        companyName: building.company.name,
+        totalDebt,
+        chargeCount: pendingCharges.length,
+        currency: building.currency,
+        pdfBuffer,
+      });
+
+      sent++;
+    } catch (err) {
+      console.error(`[notify] Error sending to apt ${apt.number}:`, err);
+      errors++;
+    }
+  }
+
+  return { sent, skipped, errors };
 }
 
 export async function getBuildingStats(id: string, companyId: string) {

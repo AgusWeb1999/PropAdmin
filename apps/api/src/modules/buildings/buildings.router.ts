@@ -52,6 +52,12 @@ router.get('/:id/debt-report', asyncHandler(async (req, res) => {
   doc.end();
 }));
 
+// POST /buildings/:id/notify-residents  → send debt emails to all residents
+router.post('/:id/notify-residents', asyncHandler(async (req, res) => {
+  const result = await buildingsService.notifyResidents(req.params.id, req.companyId!);
+  res.json({ success: true, data: result });
+}));
+
 // POST /buildings
 router.post('/', requireRole('EMPLOYEE'), asyncHandler(async (req, res) => {
   const data = buildingSchema.parse(req.body);
