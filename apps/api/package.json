@@ -2,10 +2,14 @@
   "name": "propadmin-api",
   "version": "1.0.0",
   "private": true,
+  "prisma": {
+    "schema": "src/prisma/schema.prisma"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js",
+    "build": "prisma generate && tsc",
+    "start": "prisma migrate deploy && node dist/server.js",
+    "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",

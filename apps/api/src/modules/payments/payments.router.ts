@@ -55,7 +55,17 @@ router.get('/delinquents', asyncHandler(async (req, res) => {
 
 // GET /payments/:id/receipt (PDF)
 router.get('/:id/receipt', asyncHandler(async (req, res) => {
-  const data = await paymentsService.getReceiptData(req.params.id, req.companyId!);
+  const raw = await paymentsService.getReceiptData(req.params.id, req.companyId!);
+  // Prisma returns Decimal for amount fields — cast to number for PDF generator
+  const data = {
+    ...raw,
+    amount: Number(raw.amount),
+    paymentCharges: raw.paymentCharges.map((pc) => ({
+      ...pc,
+      amount: Number(pc.amount),
+      charge: { ...pc.charge, amount: Number(pc.charge.amount) },
+    })),
+  };
   const pdf = await generateReceipt(data);
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="recibo-${req.params.id}.pdf"`);

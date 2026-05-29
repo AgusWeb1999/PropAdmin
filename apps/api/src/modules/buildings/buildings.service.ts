@@ -104,9 +104,9 @@ export async function getBuildingStats(id: string, companyId: string) {
     totalApartments,
     occupiedApartments,
     vacantApartments: totalApartments - occupiedApartments,
-    pendingDebt: pendingCharges._sum.amount || 0,
+    pendingDebt: Number(pendingCharges._sum.amount || 0),
     pendingCount: pendingCharges._count,
-    overdueDebt: (overdueCharges._sum.amount || 0) + (overdueCharges._sum.interestAmount || 0),
+    overdueDebt: Number(overdueCharges._sum.amount || 0) + Number(overdueCharges._sum.interestAmount || 0),
     overdueCount: overdueCharges._count,
   };
 }
