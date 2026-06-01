@@ -1,6 +1,24 @@
 import { prisma } from '../../prisma/client';
 import { AppError } from '../../middleware/error.middleware';
 
+export async function getAllResidents(companyId: string, buildingId?: string) {
+  return prisma.resident.findMany({
+    where: {
+      deletedAt: null,
+      apartment: {
+        deletedAt: null,
+        building: { companyId, deletedAt: null, ...(buildingId ? { id: buildingId } : {}) },
+      },
+    },
+    include: {
+      apartment: {
+        select: { number: true, floor: true, building: { select: { id: true, name: true } } },
+      },
+    },
+    orderBy: [{ isActive: 'desc' }, { lastName: 'asc' }, { firstName: 'asc' }],
+  });
+}
+
 export async function getResidentsByApartment(apartmentId: string, companyId: string) {
   const apartment = await prisma.apartment.findFirst({
     where: { id: apartmentId, building: { companyId }, deletedAt: null },

@@ -20,6 +20,12 @@ const residentSchema = z.object({
   notes: z.string().optional(),
 });
 
+// GET /residents (all for company, optional ?buildingId=)
+router.get('/', asyncHandler(async (req, res) => {
+  const data = await residentsService.getAllResidents(req.companyId!, req.query.buildingId as string | undefined);
+  res.json({ success: true, data });
+}));
+
 // GET /residents/apartment/:apartmentId
 router.get('/apartment/:apartmentId', asyncHandler(async (req, res) => {
   const data = await residentsService.getResidentsByApartment(req.params.apartmentId, req.companyId!);

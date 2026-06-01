@@ -1,6 +1,28 @@
 import { prisma } from '../../prisma/client';
 import { AppError } from '../../middleware/error.middleware';
 
+export async function getAllApartments(companyId: string, buildingId?: string) {
+  return prisma.apartment.findMany({
+    where: {
+      deletedAt: null,
+      building: { companyId, deletedAt: null, ...(buildingId ? { id: buildingId } : {}) },
+    },
+    include: {
+      building: { select: { id: true, name: true, currency: true } },
+      residents: {
+        where: { isActive: true, deletedAt: null },
+        select: { id: true, firstName: true, lastName: true, type: true },
+        take: 1,
+      },
+      charges: {
+        where: { status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] }, deletedAt: null },
+        select: { amount: true, interestAmount: true, paidAmount: true },
+      },
+    },
+    orderBy: [{ building: { name: 'asc' } }, { floor: 'asc' }, { number: 'asc' }],
+  });
+}
+
 export async function getApartments(buildingId: string, companyId: string) {
   const building = await prisma.building.findFirst({
     where: { id: buildingId, companyId, deletedAt: null },
