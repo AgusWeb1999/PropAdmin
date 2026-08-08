@@ -10,6 +10,10 @@ export const env = {
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '15m',
   JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  // Brevo HTTP API key (xkeysib-...) — used for transactional email via REST
+  // SMTP keys (xsmtpsib-...) don't work here; Render blocks outbound port 587
+  BREVO_API_KEY: process.env.BREVO_API_KEY || '',
+  // Legacy / kept for reference — not used in production
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
   BREVO_SMTP_USER: process.env.BREVO_SMTP_USER || '',
   BREVO_SMTP_KEY: process.env.BREVO_SMTP_KEY || '',

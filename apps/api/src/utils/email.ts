@@ -1,34 +1,75 @@
-import nodemailer from 'nodemailer';
 import { env } from '../config';
 
-// Lazy init — Brevo SMTP transporter
-let _transporter: nodemailer.Transporter | null = null;
-function getTransporter(): nodemailer.Transporter | null {
-  if (!env.BREVO_SMTP_USER || !env.BREVO_SMTP_KEY) {
-    console.warn('[email] BREVO_SMTP_USER / BREVO_SMTP_KEY no configurados — emails omitidos');
-    return null;
-  }
-  if (!_transporter) {
-    _transporter = nodemailer.createTransport({
-      host: 'smtp-relay.brevo.com',
-      port: 587,
-      secure: false,
-      auth: { user: env.BREVO_SMTP_USER, pass: env.BREVO_SMTP_KEY },
-      pool: true,           // reutiliza conexión SMTP entre envíos
-      maxConnections: 3,
-      connectionTimeout: 15000,
-      greetingTimeout: 10000,
-      socketTimeout: 20000,
-    });
-  }
-  return _transporter;
+// ────────────────────────────────────────────────────────────
+// Brevo transactional email — HTTP API (port 443, never blocked)
+// SMTP (port 587) is blocked by Render free tier.
+// ────────────────────────────────────────────────────────────
+
+interface BrevoAttachment {
+  name: string;
+  content: string; // base64
 }
 
-async function sendMail(options: nodemailer.SendMailOptions): Promise<void> {
-  const transporter = getTransporter();
-  if (!transporter) return;
-  await transporter.sendMail({ from: env.EMAIL_FROM, ...options });
+interface BrevoPayload {
+  sender: { name: string; email: string };
+  to: Array<{ email: string; name?: string }>;
+  subject: string;
+  htmlContent: string;
+  attachment?: BrevoAttachment[];
 }
+
+// Parse "Name <email>" or plain "email" from EMAIL_FROM env var
+function parseSender(): { name: string; email: string } {
+  const raw = env.EMAIL_FROM || 'PropAdmin <propadminok@gmail.com>';
+  const m = /^(.+?)\s*<(.+?)>$/.exec(raw.trim());
+  if (m) return { name: m[1].replace(/^"|"$/g, '').trim(), email: m[2].trim() };
+  return { name: 'PropAdmin', email: raw.trim() };
+}
+
+async function sendBrevoEmail(
+  to: string,
+  toName: string,
+  subject: string,
+  html: string,
+  attachments?: Array<{ filename: string; content: Buffer }>,
+): Promise<void> {
+  if (!env.BREVO_API_KEY) {
+    console.warn('[email] BREVO_API_KEY no configurado — email omitido');
+    return;
+  }
+
+  const payload: BrevoPayload = {
+    sender: parseSender(),
+    to: [{ email: to, name: toName }],
+    subject,
+    htmlContent: html,
+  };
+
+  if (attachments?.length) {
+    payload.attachment = attachments.map(a => ({
+      name: a.filename,
+      content: a.content.toString('base64'),
+    }));
+  }
+
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': env.BREVO_API_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Brevo API ${res.status}: ${text}`);
+  }
+}
+
+// ────────────────────────────────────────────────────────────
+// Public helpers
+// ────────────────────────────────────────────────────────────
 
 const METHOD_LABELS: Record<string, string> = {
   CASH: 'Efectivo',
@@ -56,10 +97,11 @@ export async function sendReceiptEmail(data: {
     day: '2-digit', month: 'long', year: 'numeric',
   }).format(data.date);
 
-  await sendMail({
-    to: data.to,
-    subject: `Recibo de pago — ${data.buildingName} Apt ${data.aptNumber}`,
-    html: `
+  await sendBrevoEmail(
+    data.to,
+    data.residentName,
+    `Recibo de pago — ${data.buildingName} Apt ${data.aptNumber}`,
+    `
       <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; background: #fff; padding: 32px; border-radius: 12px;">
         <div style="text-align: center; margin-bottom: 24px;">
           <h1 style="font-size: 20px; font-weight: 700; color: #0f172a; margin: 12px 0 4px;">${data.companyName}</h1>
@@ -95,11 +137,8 @@ export async function sendReceiptEmail(data: {
         </p>
       </div>
     `,
-    attachments: [{
-      filename: `recibo-${data.paymentId.slice(-8).toUpperCase()}.pdf`,
-      content: data.pdfBuffer,
-    }],
-  });
+    [{ filename: `recibo-${data.paymentId.slice(-8).toUpperCase()}.pdf`, content: data.pdfBuffer }],
+  );
 }
 
 export async function sendAnnouncementEmail(data: {
@@ -117,10 +156,11 @@ export async function sendAnnouncementEmail(data: {
     ? new Intl.DateTimeFormat('es-UY', { day: '2-digit', month: 'long', year: 'numeric' }).format(data.expiresAt)
     : null;
 
-  await sendMail({
-    to: data.to,
-    subject: `${data.isImportant ? '⚠️ ' : ''}${data.title} — ${data.buildingName}`,
-    html: `
+  await sendBrevoEmail(
+    data.to,
+    data.residentName,
+    `${data.isImportant ? '⚠️ ' : ''}${data.title} — ${data.buildingName}`,
+    `
       <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; background: #fff; padding: 32px; border-radius: 12px;">
         <div style="text-align: center; margin-bottom: 24px;">
           <h1 style="font-size: 20px; font-weight: 700; color: #0f172a; margin: 12px 0 4px;">${data.companyName}</h1>
@@ -144,7 +184,7 @@ export async function sendAnnouncementEmail(data: {
         </p>
       </div>
     `,
-  });
+  );
 }
 
 export async function sendDebtNotificationEmail(data: {
@@ -161,10 +201,11 @@ export async function sendDebtNotificationEmail(data: {
   const fmt = (n: number) => `${data.currency} ${n.toLocaleString('es-UY')}`;
   const today = new Intl.DateTimeFormat('es-UY', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date());
 
-  await sendMail({
-    to: data.to,
-    subject: `Estado de cuenta — ${data.buildingName} Apt ${data.aptNumber}`,
-    html: `
+  await sendBrevoEmail(
+    data.to,
+    data.residentName,
+    `Estado de cuenta — ${data.buildingName} Apt ${data.aptNumber}`,
+    `
       <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; background: #fff; padding: 32px; border-radius: 12px;">
         <div style="text-align: center; margin-bottom: 24px;">
           <h1 style="font-size: 20px; font-weight: 700; color: #0f172a; margin: 12px 0 4px;">${data.companyName}</h1>
@@ -188,9 +229,6 @@ export async function sendDebtNotificationEmail(data: {
         </p>
       </div>
     `,
-    attachments: [{
-      filename: `estado-cuenta-apt${data.aptNumber}.pdf`,
-      content: data.pdfBuffer,
-    }],
-  });
+    [{ filename: `estado-cuenta-apt${data.aptNumber}.pdf`, content: data.pdfBuffer }],
+  );
 }
