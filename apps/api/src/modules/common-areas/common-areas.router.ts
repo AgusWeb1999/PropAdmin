@@ -12,13 +12,13 @@ router.use(authenticate);
 const areaSchema = z.object({
   buildingId: z.string(),
   name: z.string().min(1),
-  icon: z.string().optional(),
-  description: z.string().optional(),
-  capacity: z.number().int().positive().optional(),
+  icon: z.string().nullish(),
+  description: z.string().nullish(),
+  capacity: z.number().int().positive().nullish(),
   pricePerUse: z.number().min(0).default(0),
-  openTime: z.string().optional(),
-  closeTime: z.string().optional(),
-  rules: z.string().optional(),
+  openTime: z.string().nullish(),
+  closeTime: z.string().nullish(),
+  rules: z.string().nullish(),
 });
 
 // GET /common-areas/building/:buildingId
