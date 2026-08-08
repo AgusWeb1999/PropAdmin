@@ -54,26 +54,29 @@ async function main() {
     },
   });
 
-  // Create apartments with coefficients that sum to 1
+  // Create apartments with coefficients that sum to exactly 1.0
+  // Floor 1: 0.07+0.07=0.14 | Floor 2+4: 0.08+0.08=0.16 each
+  // Floor 3+5: 0.085+0.085=0.17 each | PH: 0.10+0.10=0.20
+  // Total: 0.14+0.16+0.17+0.16+0.17+0.20 = 1.00
   const aptData = [
-    { number: '101', floor: '1', coefficient: 0.08 },
-    { number: '102', floor: '1', coefficient: 0.09 },
-    { number: '201', floor: '2', coefficient: 0.085 },
-    { number: '202', floor: '2', coefficient: 0.085 },
-    { number: '301', floor: '3', coefficient: 0.09 },
-    { number: '302', floor: '3', coefficient: 0.09 },
-    { number: '401', floor: '4', coefficient: 0.085 },
-    { number: '402', floor: '4', coefficient: 0.085 },
-    { number: '501', floor: '5', coefficient: 0.09 },
-    { number: '502', floor: '5', coefficient: 0.09 },
-    { number: '601', floor: 'PH', coefficient: 0.10 },
-    { number: '602', floor: 'PH', coefficient: 0.10 },
+    { number: '101', floor: '1',  coefficient: 0.07  },
+    { number: '102', floor: '1',  coefficient: 0.07  },
+    { number: '201', floor: '2',  coefficient: 0.08  },
+    { number: '202', floor: '2',  coefficient: 0.08  },
+    { number: '301', floor: '3',  coefficient: 0.085 },
+    { number: '302', floor: '3',  coefficient: 0.085 },
+    { number: '401', floor: '4',  coefficient: 0.08  },
+    { number: '402', floor: '4',  coefficient: 0.08  },
+    { number: '501', floor: '5',  coefficient: 0.085 },
+    { number: '502', floor: '5',  coefficient: 0.085 },
+    { number: '601', floor: 'PH', coefficient: 0.10  },
+    { number: '602', floor: 'PH', coefficient: 0.10  },
   ];
 
   for (const apt of aptData) {
     await prisma.apartment.upsert({
       where: { buildingId_number: { buildingId: building.id, number: apt.number } },
-      update: {},
+      update: { coefficient: apt.coefficient },   // corrige coeficientes si ya existen
       create: { ...apt, buildingId: building.id },
     });
   }
