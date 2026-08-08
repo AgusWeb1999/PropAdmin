@@ -1,12 +1,28 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import { env } from '../config';
 
-// Lazy init — only creates client if API key is set
-let _resend: Resend | null = null;
-function getResend(): Resend | null {
-  if (!env.RESEND_API_KEY) return null;
-  if (!_resend) _resend = new Resend(env.RESEND_API_KEY);
-  return _resend;
+// Lazy init — Brevo SMTP transporter
+let _transporter: nodemailer.Transporter | null = null;
+function getTransporter(): nodemailer.Transporter | null {
+  if (!env.BREVO_SMTP_USER || !env.BREVO_SMTP_KEY) {
+    console.warn('[email] BREVO_SMTP_USER / BREVO_SMTP_KEY no configurados — emails omitidos');
+    return null;
+  }
+  if (!_transporter) {
+    _transporter = nodemailer.createTransport({
+      host: 'smtp-relay.brevo.com',
+      port: 587,
+      secure: false,
+      auth: { user: env.BREVO_SMTP_USER, pass: env.BREVO_SMTP_KEY },
+    });
+  }
+  return _transporter;
+}
+
+async function sendMail(options: nodemailer.SendMailOptions): Promise<void> {
+  const transporter = getTransporter();
+  if (!transporter) return;
+  await transporter.sendMail({ from: env.EMAIL_FROM, ...options });
 }
 
 const METHOD_LABELS: Record<string, string> = {
@@ -30,16 +46,12 @@ export async function sendReceiptEmail(data: {
   pdfBuffer: Buffer;
   paymentId: string;
 }) {
-  const resend = getResend();
-  if (!resend) return;
-
   const formattedAmount = `$${data.amount.toLocaleString('es-UY')}`;
   const formattedDate = new Intl.DateTimeFormat('es-UY', {
     day: '2-digit', month: 'long', year: 'numeric',
   }).format(data.date);
 
-  await resend.emails.send({
-    from: env.EMAIL_FROM,
+  await sendMail({
     to: data.to,
     subject: `Recibo de pago — ${data.buildingName} Apt ${data.aptNumber}`,
     html: `
@@ -95,16 +107,12 @@ export async function sendAnnouncementEmail(data: {
   isImportant: boolean;
   expiresAt?: Date | null;
 }) {
-  const resend = getResend();
-  if (!resend) return;
-
   const today = new Intl.DateTimeFormat('es-UY', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date());
   const expiresStr = data.expiresAt
     ? new Intl.DateTimeFormat('es-UY', { day: '2-digit', month: 'long', year: 'numeric' }).format(data.expiresAt)
     : null;
 
-  await resend.emails.send({
-    from: env.EMAIL_FROM,
+  await sendMail({
     to: data.to,
     subject: `${data.isImportant ? '⚠️ ' : ''}${data.title} — ${data.buildingName}`,
     html: `
@@ -145,14 +153,10 @@ export async function sendDebtNotificationEmail(data: {
   currency: string;
   pdfBuffer: Buffer;
 }) {
-  const resend = getResend();
-  if (!resend) return;
-
   const fmt = (n: number) => `${data.currency} ${n.toLocaleString('es-UY')}`;
   const today = new Intl.DateTimeFormat('es-UY', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date());
 
-  await resend.emails.send({
-    from: env.EMAIL_FROM,
+  await sendMail({
     to: data.to,
     subject: `Estado de cuenta — ${data.buildingName} Apt ${data.aptNumber}`,
     html: `
