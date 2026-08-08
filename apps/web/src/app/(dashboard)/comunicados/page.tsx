@@ -19,7 +19,7 @@ export default function ComunicadosPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: '', content: '', isImportant: false, expiresAt: '' });
+  const [form, setForm] = useState({ title: '', content: '', isImportant: false, expiresAt: '', notifyByEmail: false });
 
   useEffect(() => {
     api.get<Building[]>('/buildings').then(b => { setBuildings(b); if (b.length > 0) setBuildingId(b[0].id); });
@@ -34,16 +34,18 @@ export default function ComunicadosPage() {
 
   const handleCreate = async () => {
     try {
-      await api.post('/announcements', {
+      const result = await api.post<{ announcement: Announcement; emailsSent: number; emailsSkipped: number }>('/announcements', {
         buildingId,
         title: form.title,
         content: form.content,
         isImportant: form.isImportant,
         expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : undefined,
+        notifyByEmail: form.notifyByEmail,
       });
-      toast.success('Comunicado publicado');
+      const emailMsg = form.notifyByEmail ? ` · ${result.emailsSent} email${result.emailsSent !== 1 ? 's' : ''} enviado${result.emailsSent !== 1 ? 's' : ''}` : '';
+      toast.success(`Comunicado publicado${emailMsg}`);
       setShowForm(false);
-      setForm({ title: '', content: '', isImportant: false, expiresAt: '' });
+      setForm({ title: '', content: '', isImportant: false, expiresAt: '', notifyByEmail: false });
       load();
     } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error'); }
   };
@@ -92,7 +94,7 @@ export default function ComunicadosPage() {
                   rows={4} placeholder="Escribí el mensaje para los residentes..."
                   className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none resize-none" />
               </div>
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-6 flex-wrap">
                 <div>
                   <label className="text-xs text-slate-500 mb-1 block">Vence el (opcional)</label>
                   <input type="date" value={form.expiresAt} onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))}
@@ -102,6 +104,11 @@ export default function ComunicadosPage() {
                   <input type="checkbox" checked={form.isImportant} onChange={e => setForm(f => ({ ...f, isImportant: e.target.checked }))}
                     className="w-4 h-4 rounded" />
                   <span className="text-sm text-slate-700">Marcar como importante</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer mt-4">
+                  <input type="checkbox" checked={form.notifyByEmail} onChange={e => setForm(f => ({ ...f, notifyByEmail: e.target.checked }))}
+                    className="w-4 h-4 rounded" />
+                  <span className="text-sm text-slate-700">Notificar por email a residentes</span>
                 </label>
               </div>
             </div>

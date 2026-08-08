@@ -85,6 +85,55 @@ export async function sendReceiptEmail(data: {
   });
 }
 
+export async function sendAnnouncementEmail(data: {
+  to: string;
+  residentName: string;
+  buildingName: string;
+  companyName: string;
+  title: string;
+  content: string;
+  isImportant: boolean;
+  expiresAt?: Date | null;
+}) {
+  const resend = getResend();
+  if (!resend) return;
+
+  const today = new Intl.DateTimeFormat('es-UY', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date());
+  const expiresStr = data.expiresAt
+    ? new Intl.DateTimeFormat('es-UY', { day: '2-digit', month: 'long', year: 'numeric' }).format(data.expiresAt)
+    : null;
+
+  await resend.emails.send({
+    from: env.EMAIL_FROM,
+    to: data.to,
+    subject: `${data.isImportant ? '⚠️ ' : ''}${data.title} — ${data.buildingName}`,
+    html: `
+      <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; background: #fff; padding: 32px; border-radius: 12px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h1 style="font-size: 20px; font-weight: 700; color: #0f172a; margin: 12px 0 4px;">${data.companyName}</h1>
+          <p style="color: #94a3b8; font-size: 13px; margin: 0;">${data.buildingName} · ${today}</p>
+        </div>
+        ${data.isImportant ? `
+        <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 16px;">⚠️</span>
+          <span style="color: #92400e; font-size: 13px; font-weight: 600;">Comunicado importante</span>
+        </div>` : ''}
+        <div style="background: #f8fafc; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
+          <h2 style="margin: 0 0 12px; color: #0f172a; font-size: 16px; font-weight: 700;">${data.title}</h2>
+          <p style="margin: 0; color: #475569; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${data.content}</p>
+        </div>
+        ${expiresStr ? `
+        <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
+          Este comunicado vence el ${expiresStr}.
+        </p>` : ''}
+        <p style="color: #cbd5e1; font-size: 11px; text-align: center; margin: 16px 0 0;">
+          Hola ${data.residentName} — este mensaje fue enviado por tu administración.
+        </p>
+      </div>
+    `,
+  });
+}
+
 export async function sendDebtNotificationEmail(data: {
   to: string;
   residentName: string;
