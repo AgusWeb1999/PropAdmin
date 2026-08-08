@@ -29,8 +29,13 @@ app.set('trust proxy', 1);
 // ── Security & perf middleware ──────────────────────────────
 app.use(helmet());
 app.use(compression());
+const allowedOrigins = env.CORS_ORIGIN.split(',').map(o => o.trim());
 app.use(cors({
-  origin: env.CORS_ORIGIN,
+  origin: (origin, cb) => {
+    // permitir requests sin origin (curl, mobile, server-to-server)
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    cb(new Error(`CORS: origin ${origin} no permitido`));
+  },
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
