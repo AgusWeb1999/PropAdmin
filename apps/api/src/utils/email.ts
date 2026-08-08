@@ -14,6 +14,11 @@ function getTransporter(): nodemailer.Transporter | null {
       port: 587,
       secure: false,
       auth: { user: env.BREVO_SMTP_USER, pass: env.BREVO_SMTP_KEY },
+      pool: true,           // reutiliza conexión SMTP entre envíos
+      maxConnections: 3,
+      connectionTimeout: 15000,
+      greetingTimeout: 10000,
+      socketTimeout: 20000,
     });
   }
   return _transporter;

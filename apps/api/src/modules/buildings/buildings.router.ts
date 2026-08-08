@@ -53,9 +53,18 @@ router.get('/:id/debt-report', asyncHandler(async (req, res) => {
 }));
 
 // POST /buildings/:id/notify-residents  → send debt emails to all residents
+// Responde de inmediato; el envío ocurre en segundo plano para no colgar el browser.
 router.post('/:id/notify-residents', asyncHandler(async (req, res) => {
-  const result = await buildingsService.notifyResidents(req.params.id, req.companyId!);
-  res.json({ success: true, data: result });
+  const buildingId = req.params.id;
+  const companyId  = req.companyId!;
+
+  // Responder antes de que empiece el envío
+  res.json({ success: true, data: { queued: true, message: 'Notificaciones enviándose en segundo plano' } });
+
+  // Fire-and-forget: no await, errores van al log
+  buildingsService.notifyResidents(buildingId, companyId)
+    .then(r => console.log(`[notify-residents] background done:`, r))
+    .catch(e => console.error(`[notify-residents] background error:`, e));
 }));
 
 // POST /buildings

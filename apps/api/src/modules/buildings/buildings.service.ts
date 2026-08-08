@@ -158,24 +158,26 @@ export async function notifyResidents(id: string, companyId: string): Promise<{ 
   });
   if (!building) throw new AppError('Edificio no encontrado', 404, 'NOT_FOUND');
 
-  let sent = 0, skipped = 0, skippedNoEmail = 0, skippedNoDebt = 0, errors = 0;
+  // Separar los que tienen deuda y email de los que hay que saltear
+  const eligible = building.apartments.filter(apt => {
+    if (apt.charges.filter(c => c.status !== 'PAID').length === 0) return false;
+    if (!apt.residents[0]?.email) return false;
+    return true;
+  });
 
-  for (const apt of building.apartments) {
-    const resident = apt.residents[0];
-    const pendingCharges = apt.charges.filter(c => c.status !== 'PAID');
+  const skippedNoDebt  = building.apartments.filter(apt => apt.charges.filter(c => c.status !== 'PAID').length === 0).length;
+  const skippedNoEmail = building.apartments.filter(apt => apt.charges.filter(c => c.status !== 'PAID').length > 0 && !apt.residents[0]?.email).length;
+  const skipped = skippedNoDebt + skippedNoEmail;
 
-    if (pendingCharges.length === 0) { skippedNoDebt++; skipped++; continue; }
-    if (!resident?.email) {
-      console.log(`[notify] Apt ${apt.number}: no email for resident ${resident?.firstName ?? 'none'}`);
-      skippedNoEmail++; skipped++; continue;
-    }
+  // Procesar todos en paralelo (Promise.allSettled) en vez de secuencial
+  const results = await Promise.allSettled(
+    eligible.map(async apt => {
+      const resident = apt.residents[0];
+      const pendingCharges = apt.charges.filter(c => c.status !== 'PAID');
+      const totalDebt = pendingCharges.reduce(
+        (s, c) => s + Number(c.amount) + Number(c.interestAmount) - Number(c.paidAmount), 0
+      );
 
-    const totalDebt = pendingCharges.reduce(
-      (s, c) => s + Number(c.amount) + Number(c.interestAmount) - Number(c.paidAmount), 0
-    );
-
-    try {
-      // Generate per-apartment statement PDF
       const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
         const doc = generateAccountStatement({
           apartment: {
@@ -200,7 +202,7 @@ export async function notifyResidents(id: string, companyId: string): Promise<{ 
       });
 
       await sendDebtNotificationEmail({
-        to: resident.email,
+        to: resident.email!,
         residentName: `${resident.firstName} ${resident.lastName}`,
         buildingName: building.name,
         aptNumber: apt.number,
@@ -212,12 +214,14 @@ export async function notifyResidents(id: string, companyId: string): Promise<{ 
       });
 
       console.log(`[notify] Sent to ${resident.email} (apt ${apt.number})`);
-      sent++;
-    } catch (err) {
-      console.error(`[notify] Error sending to apt ${apt.number}:`, err);
-      errors++;
-    }
-  }
+    })
+  );
+
+  const sent   = results.filter(r => r.status === 'fulfilled').length;
+  const errors = results.filter(r => r.status === 'rejected').length;
+  results.filter(r => r.status === 'rejected').forEach((r, i) =>
+    console.error(`[notify] Error apt ${eligible[i]?.number}:`, (r as PromiseRejectedResult).reason)
+  );
 
   console.log(`[notify] Done — sent:${sent} skippedNoEmail:${skippedNoEmail} skippedNoDebt:${skippedNoDebt} errors:${errors}`);
   return { sent, skipped, skippedNoEmail, skippedNoDebt, errors };
