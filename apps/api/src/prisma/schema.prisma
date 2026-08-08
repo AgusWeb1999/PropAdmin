@@ -132,6 +132,7 @@ model Apartment {
   bathrooms       Int?
   hasParking      Boolean         @default(false)
   hasStorage      Boolean         @default(false)
+  hasGrill        Boolean         @default(false)
   status          ApartmentStatus @default(OCCUPIED)
   notes           String?
   createdAt       DateTime        @default(now())

@@ -17,6 +17,7 @@ const apartmentSchema = z.object({
   bathrooms: z.number().int().min(0).optional(),
   hasParking: z.boolean().optional(),
   hasStorage: z.boolean().optional(),
+  hasGrill: z.boolean().optional(),
   notes: z.string().optional(),
 });
 

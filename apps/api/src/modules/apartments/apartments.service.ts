@@ -77,6 +77,7 @@ export async function createApartment(buildingId: string, companyId: string, dat
   bathrooms?: number;
   hasParking?: boolean;
   hasStorage?: boolean;
+  hasGrill?: boolean;
   notes?: string;
 }) {
   const building = await prisma.building.findFirst({
@@ -96,6 +97,7 @@ export async function updateApartment(id: string, companyId: string, data: Parti
   bathrooms: number;
   hasParking: boolean;
   hasStorage: boolean;
+  hasGrill: boolean;
   status: string;
   notes: string;
 }>) {
