@@ -228,6 +228,7 @@ model Charge {
   apartment       Apartment    @relation(fields: [apartmentId], references: [id])
   expense         Expense?     @relation(fields: [expenseId], references: [id])
   paymentCharges  PaymentCharge[]
+  reservation     Reservation? @relation("ReservationCharge")
 
   @@index([apartmentId, status])
   @@index([apartmentId, period])
@@ -278,6 +279,7 @@ model CommonArea {
   id              String    @id @default(cuid())
   buildingId      String
   name            String
+  icon            String?   // emoji: "🔥", "🏊", "💪", etc.
   description     String?
   capacity        Int?
   pricePerUse     Decimal   @default(0) @db.Decimal(10, 2)
@@ -288,6 +290,7 @@ model CommonArea {
   imageUrl        String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
 
   building        Building  @relation(fields: [buildingId], references: [id])
   reservations    Reservation[]
@@ -307,6 +310,7 @@ model Reservation {
   totalCost       Decimal           @default(0) @db.Decimal(10, 2)
   notes           String?
   cancelReason    String?
+  chargeId        String?           @unique
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   deletedAt       DateTime?
@@ -314,6 +318,7 @@ model Reservation {
   building        Building    @relation(fields: [buildingId], references: [id])
   commonArea      CommonArea  @relation(fields: [commonAreaId], references: [id])
   resident        Resident    @relation(fields: [residentId], references: [id])
+  charge          Charge?     @relation("ReservationCharge", fields: [chargeId], references: [id])
 
   @@index([buildingId, startDateTime])
   @@index([commonAreaId, startDateTime])

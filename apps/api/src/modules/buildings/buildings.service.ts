@@ -31,7 +31,7 @@ export async function getBuildingById(id: string, companyId: string) {
         },
         orderBy: [{ floor: 'asc' }, { number: 'asc' }],
       },
-      commonAreas: { where: { isActive: true } },
+      commonAreas: { where: { isActive: true, deletedAt: null }, orderBy: { name: 'asc' } },
       _count: { select: { apartments: true, expenses: true } },
     },
   });

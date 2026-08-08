@@ -123,6 +123,7 @@ CREATE TABLE "apartments" (
     "bathrooms" INTEGER,
     "hasParking" BOOLEAN NOT NULL DEFAULT false,
     "hasStorage" BOOLEAN NOT NULL DEFAULT false,
+    "hasGrill" BOOLEAN NOT NULL DEFAULT false,
     "status" "ApartmentStatus" NOT NULL DEFAULT 'OCCUPIED',
     "notes" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

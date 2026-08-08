@@ -17,6 +17,7 @@ const schema = z.object({
   bathrooms:   z.coerce.number().int().min(0).optional().or(z.literal('')),
   hasParking:  z.boolean().optional(),
   hasStorage:  z.boolean().optional(),
+  hasGrill:    z.boolean().optional(),
   status:      z.enum(['OCCUPIED', 'VACANT', 'MAINTENANCE']),
 });
 type FormData = z.infer<typeof schema>;
@@ -32,7 +33,7 @@ export function ApartmentForm({ isOpen, onClose, onCreated, buildingId }: Props)
   const toast = useToast();
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { status: 'OCCUPIED', hasParking: false, hasStorage: false },
+    defaultValues: { status: 'OCCUPIED', hasParking: false, hasStorage: false, hasGrill: false },
   });
 
   const onSubmit = async (data: FormData) => {
@@ -101,6 +102,10 @@ export function ApartmentForm({ isOpen, onClose, onCreated, buildingId }: Props)
             <label className="flex items-center gap-2 cursor-pointer">
               <input {...register('hasStorage')} type="checkbox" className="w-4 h-4 rounded" />
               <span className="text-sm text-slate-700">Tiene baulera</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input {...register('hasGrill')} type="checkbox" className="w-4 h-4 rounded" />
+              <span className="text-sm text-slate-700">Tiene parrillero</span>
             </label>
           </div>
         </div>

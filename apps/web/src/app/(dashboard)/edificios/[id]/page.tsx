@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Plus, ArrowLeft, Home, Users, Receipt, MapPin, Download, Mail, Loader2 } from 'lucide-react';
+import { Plus, ArrowLeft, Home, Users, Receipt, MapPin, Download, Mail, Loader2, Sparkles, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -15,18 +15,36 @@ import { useToast } from '@/hooks/useToast';
 interface Resident { id: string; firstName: string; lastName: string; type: string; phone: string | null; email: string | null }
 interface Apartment {
   id: string; number: string; floor: string | null; coefficient: number;
-  status: string; area: number | null; hasParking: boolean; hasStorage: boolean;
+  status: string; area: number | null; hasParking: boolean; hasStorage: boolean; hasGrill: boolean;
   residents: Resident[];
   charges: Array<{ amount: number; interestAmount: number; paidAmount: number; status: string }>;
+}
+interface CommonArea {
+  id: string; name: string; icon: string | null; description: string | null;
+  pricePerUse: number; capacity: number | null; openTime: string | null; closeTime: string | null; rules: string | null;
 }
 interface Building {
   id: string; name: string; address: string; city: string; totalUnits: number;
   currency: string; interestRate: number;
   apartments: Apartment[];
+  commonAreas: CommonArea[];
   _count: { apartments: number };
 }
 
-type Tab = 'apartamentos' | 'residentes';
+const AMENITY_PRESETS = [
+  { icon: '🔥', name: 'Parrillero' },
+  { icon: '🏊', name: 'Piscina' },
+  { icon: '💪', name: 'Gimnasio' },
+  { icon: '💻', name: 'Coworking' },
+  { icon: '🎬', name: 'Cine' },
+  { icon: '🎉', name: 'Salón de eventos' },
+  { icon: '🧺', name: 'Lavandería' },
+  { icon: '☀️', name: 'Terraza' },
+  { icon: '🏓', name: 'Sum / Juegos' },
+  { icon: '🅿️', name: 'Estacionamiento visitas' },
+];
+
+type Tab = 'apartamentos' | 'residentes' | 'amenidades';
 
 export default function BuildingDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -39,6 +57,11 @@ export default function BuildingDetailPage() {
   const [aptFormOpen, setAptFormOpen] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [sendingEmails, setSendingEmails] = useState(false);
+
+  // Amenidades state
+  const [areaFormOpen, setAreaFormOpen] = useState(false);
+  const [editingArea, setEditingArea] = useState<CommonArea | null>(null);
+  const [areaForm, setAreaForm] = useState({ name: '', icon: '', description: '', pricePerUse: 0, capacity: '', openTime: '', closeTime: '', rules: '' });
 
   const downloadDebtReport = async () => {
     setExportingPdf(true);
@@ -91,6 +114,52 @@ export default function BuildingDetailPage() {
     } finally {
       setSendingEmails(false);
     }
+  };
+
+  const openEditArea = (area: CommonArea) => {
+    setEditingArea(area);
+    setAreaForm({
+      name: area.name, icon: area.icon ?? '', description: area.description ?? '',
+      pricePerUse: area.pricePerUse, capacity: area.capacity?.toString() ?? '',
+      openTime: area.openTime ?? '', closeTime: area.closeTime ?? '', rules: area.rules ?? '',
+    });
+    setAreaFormOpen(true);
+  };
+
+  const handleSaveArea = async () => {
+    const body = {
+      buildingId: id,
+      name: areaForm.name,
+      icon: areaForm.icon || null,
+      description: areaForm.description || null,
+      pricePerUse: Number(areaForm.pricePerUse) || 0,
+      capacity: areaForm.capacity ? Number(areaForm.capacity) : undefined,
+      openTime: areaForm.openTime || null,
+      closeTime: areaForm.closeTime || null,
+      rules: areaForm.rules || null,
+    };
+    try {
+      if (editingArea) {
+        await api.put(`/common-areas/${editingArea.id}`, body);
+        toast.success('Amenidad actualizada');
+      } else {
+        await api.post('/common-areas', body);
+        toast.success('Amenidad agregada');
+      }
+      setAreaFormOpen(false);
+      setEditingArea(null);
+      setAreaForm({ name: '', icon: '', description: '', pricePerUse: 0, capacity: '', openTime: '', closeTime: '', rules: '' });
+      load();
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error'); }
+  };
+
+  const handleDeleteArea = async (areaId: string) => {
+    if (!confirm('¿Eliminás esta amenidad?')) return;
+    try {
+      await api.delete(`/common-areas/${areaId}`);
+      toast.success('Amenidad eliminada');
+      load();
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error'); }
   };
 
   const [resFormApt, setResFormApt] = useState<Apartment | null>(null);
@@ -176,6 +245,14 @@ export default function BuildingDetailPage() {
                 <Plus className="w-3.5 h-3.5" /> Nuevo apartamento
               </button>
             )}
+            {tab === 'amenidades' && (
+              <button
+                onClick={() => { setEditingArea(null); setAreaFormOpen(true); }}
+                className="flex items-center gap-1.5 bg-slate-900 text-white text-sm font-medium px-3.5 py-2 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" /> Nueva amenidad
+              </button>
+            )}
           </div>
         }
       />
@@ -207,7 +284,7 @@ export default function BuildingDetailPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
-          {(['apartamentos', 'residentes'] as Tab[]).map((t) => (
+          {(['apartamentos', 'residentes', 'amenidades'] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -321,6 +398,151 @@ export default function BuildingDetailPage() {
                   ))}
                 </tbody>
               </table>
+            )}
+          </div>
+        )}
+
+        {/* Amenidades tab */}
+        {tab === 'amenidades' && (
+          <div className="space-y-4">
+            {/* Form inline */}
+            {areaFormOpen && (
+              <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
+                <h3 className="text-sm font-semibold text-slate-900">
+                  {editingArea ? 'Editar amenidad' : 'Nueva amenidad'}
+                </h3>
+                {/* Presets */}
+                {!editingArea && (
+                  <div>
+                    <p className="text-xs text-slate-500 mb-2">Elegí un preset o personalizá:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {AMENITY_PRESETS.map(p => (
+                        <button key={p.name} type="button"
+                          onClick={() => setAreaForm(f => ({ ...f, name: p.name, icon: p.icon }))}
+                          className={cn(
+                            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm transition-all',
+                            areaForm.name === p.name && areaForm.icon === p.icon
+                              ? 'border-slate-900 bg-slate-900 text-white'
+                              : 'border-gray-200 hover:border-slate-400 text-slate-700'
+                          )}
+                        >
+                          <span>{p.icon}</span> {p.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-slate-500 mb-1 block">Nombre *</label>
+                    <input value={areaForm.name} onChange={e => setAreaForm(f => ({ ...f, name: e.target.value }))}
+                      placeholder="Ej: Parrillero" className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500 mb-1 block">Ícono (emoji)</label>
+                    <input value={areaForm.icon} onChange={e => setAreaForm(f => ({ ...f, icon: e.target.value }))}
+                      placeholder="🔥" className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500 mb-1 block">Costo por uso ({building.currency})</label>
+                    <input type="number" min="0" value={areaForm.pricePerUse}
+                      onChange={e => setAreaForm(f => ({ ...f, pricePerUse: Number(e.target.value) }))}
+                      placeholder="0 = gratuito" className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500 mb-1 block">Capacidad (personas)</label>
+                    <input type="number" min="1" value={areaForm.capacity}
+                      onChange={e => setAreaForm(f => ({ ...f, capacity: e.target.value }))}
+                      placeholder="Opcional" className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500 mb-1 block">Horario apertura</label>
+                    <input type="time" value={areaForm.openTime} onChange={e => setAreaForm(f => ({ ...f, openTime: e.target.value }))}
+                      className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500 mb-1 block">Horario cierre</label>
+                    <input type="time" value={areaForm.closeTime} onChange={e => setAreaForm(f => ({ ...f, closeTime: e.target.value }))}
+                      className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs text-slate-500 mb-1 block">Descripción / Reglas</label>
+                    <textarea value={areaForm.rules} onChange={e => setAreaForm(f => ({ ...f, rules: e.target.value }))}
+                      rows={2} placeholder="Ej: Máx. 2 horas por reserva. Dejar limpio al finalizar."
+                      className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none resize-none" />
+                  </div>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => { setAreaFormOpen(false); setEditingArea(null); }}
+                    className="px-4 py-2 text-sm text-slate-500 hover:text-slate-900">Cancelar</button>
+                  <button onClick={handleSaveArea}
+                    className="bg-slate-900 text-white text-sm px-4 py-2 rounded-lg hover:bg-slate-800">
+                    {editingArea ? 'Guardar cambios' : 'Agregar'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* List */}
+            {building.commonAreas.length === 0 && !areaFormOpen ? (
+              <div className="bg-white rounded-2xl border border-gray-100 flex flex-col items-center justify-center py-16 gap-3">
+                <Sparkles className="w-10 h-10 text-slate-200" />
+                <p className="text-sm font-semibold text-slate-900">Sin amenidades configuradas</p>
+                <p className="text-sm text-slate-400">Agregá parrillero, piscina, gym y más</p>
+                <button onClick={() => { setEditingArea(null); setAreaFormOpen(true); }}
+                  className="bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-800 mt-1">
+                  Agregar amenidad
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {building.commonAreas.map(area => (
+                  <div key={area.id} className="bg-white rounded-2xl border border-gray-100 p-5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3">
+                        {area.icon && <span className="text-3xl">{area.icon}</span>}
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{area.name}</p>
+                          {area.description && <p className="text-xs text-slate-500 mt-0.5">{area.description}</p>}
+                        </div>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <button onClick={() => openEditArea(area)}
+                          className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-gray-100 rounded-lg transition-colors">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => handleDeleteArea(area.id)}
+                          className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className={cn(
+                        'text-xs px-2 py-0.5 rounded-full font-medium',
+                        Number(area.pricePerUse) === 0
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : 'bg-amber-50 text-amber-700'
+                      )}>
+                        {Number(area.pricePerUse) === 0 ? 'Gratuito' : `${building.currency} ${Number(area.pricePerUse).toLocaleString('es-UY')} / uso`}
+                      </span>
+                      {area.capacity && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                          Máx. {area.capacity} personas
+                        </span>
+                      )}
+                      {area.openTime && area.closeTime && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                          {area.openTime} – {area.closeTime}
+                        </span>
+                      )}
+                    </div>
+                    {area.rules && (
+                      <p className="mt-2 text-xs text-slate-400 line-clamp-2">{area.rules}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         )}
