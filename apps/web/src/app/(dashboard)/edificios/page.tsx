@@ -1,9 +1,10 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Upload } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { BuildingCard } from '@/components/buildings/BuildingCard';
 import { BuildingForm } from '@/components/buildings/BuildingForm';
+import { BuildingCsvImport } from '@/components/buildings/BuildingCsvImport';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +24,7 @@ export default function EdificiosPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
+  const [csvOpen, setCsvOpen]   = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -44,12 +46,20 @@ export default function EdificiosPage() {
         title="Edificios"
         subtitle={`${buildings.length} edificio${buildings.length !== 1 ? 's' : ''}`}
         actions={
-          <button
-            onClick={() => setFormOpen(true)}
-            className="flex items-center gap-1.5 bg-slate-900 text-white text-sm font-medium px-3.5 py-2 rounded-lg hover:bg-slate-800 transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" /> Nuevo edificio
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCsvOpen(true)}
+              className="flex items-center gap-1.5 border border-gray-200 text-slate-600 text-sm font-medium px-3.5 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <Upload className="w-3.5 h-3.5" /> Importar CSV
+            </button>
+            <button
+              onClick={() => setFormOpen(true)}
+              className="flex items-center gap-1.5 bg-slate-900 text-white text-sm font-medium px-3.5 py-2 rounded-lg hover:bg-slate-800 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" /> Nuevo edificio
+            </button>
+          </div>
         }
       />
 
@@ -124,6 +134,11 @@ export default function EdificiosPage() {
         isOpen={formOpen}
         onClose={() => setFormOpen(false)}
         onCreated={load}
+      />
+      <BuildingCsvImport
+        isOpen={csvOpen}
+        onClose={() => setCsvOpen(false)}
+        onImported={load}
       />
     </>
   );

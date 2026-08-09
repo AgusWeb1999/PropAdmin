@@ -74,6 +74,25 @@ router.post('/', requireRole('EMPLOYEE'), asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: building });
 }));
 
+// POST /buildings/bulk  — carga masiva desde CSV
+router.post('/bulk', requireRole('EMPLOYEE'), asyncHandler(async (req, res) => {
+  const rows = z.array(buildingSchema).min(1).max(500).parse(req.body);
+
+  const results = await Promise.allSettled(
+    rows.map(row => buildingsService.createBuilding(req.companyId!, row))
+  );
+
+  const created = results.filter(r => r.status === 'fulfilled').length;
+  const errors  = results
+    .map((r, i) => r.status === 'rejected'
+      ? { row: i + 1, name: rows[i].name, error: (r as PromiseRejectedResult).reason?.message ?? 'Error' }
+      : null
+    )
+    .filter(Boolean);
+
+  res.status(201).json({ success: true, data: { created, errors } });
+}));
+
 // PUT /buildings/:id
 router.put('/:id', requireRole('EMPLOYEE'), asyncHandler(async (req, res) => {
   const data = buildingSchema.partial().parse(req.body);

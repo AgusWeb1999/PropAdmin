@@ -69,8 +69,8 @@ export function BuildingForm({ isOpen, onClose, onCreated }: Props) {
             <input {...register('city')} placeholder="Montevideo" className={inputClass(errors.city?.message)} />
           </FormField>
 
-          <FormField label="Departamento" error={errors.department?.message}>
-            <input {...register('department')} placeholder="Montevideo" className={inputClass()} />
+          <FormField label="Barrio / Zona" error={errors.department?.message}>
+            <input {...register('department')} placeholder="Ej: Pocitos, Palermo" className={inputClass()} />
           </FormField>
 
           <FormField label="Total de unidades" error={errors.totalUnits?.message} required>
