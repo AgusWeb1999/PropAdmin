@@ -1,11 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Plus, ArrowLeft, Home, Users, Receipt, MapPin, Download, Mail, Loader2, Sparkles, Pencil, Trash2 } from 'lucide-react';
+import { Plus, ArrowLeft, Home, Users, Receipt, MapPin, Download, Mail, Loader2, Sparkles, Pencil, Trash2, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { ApartmentForm } from '@/components/apartments/ApartmentForm';
+import { ApartmentCsvImport } from '@/components/apartments/ApartmentCsvImport';
 import { ResidentForm } from '@/components/residents/ResidentForm';
 import { AccountStatement } from '@/components/apartments/AccountStatement';
 import { api } from '@/lib/api';
@@ -55,6 +56,7 @@ export default function BuildingDetailPage() {
   const [notFound, setNotFound] = useState(false);
   const [tab, setTab] = useState<Tab>('apartamentos');
   const [aptFormOpen, setAptFormOpen] = useState(false);
+  const [csvAptOpen, setCsvAptOpen] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [sendingEmails, setSendingEmails] = useState(false);
 
@@ -238,12 +240,20 @@ export default function BuildingDetailPage() {
               {exportingPdf ? 'Generando...' : 'Exportar deudas'}
             </button>
             {tab === 'apartamentos' && (
-              <button
-                onClick={() => setAptFormOpen(true)}
-                className="flex items-center gap-1.5 bg-slate-900 text-white text-sm font-medium px-3.5 py-2 rounded-lg hover:bg-slate-800 transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" /> Nuevo apartamento
-              </button>
+              <>
+                <button
+                  onClick={() => setCsvAptOpen(true)}
+                  className="flex items-center gap-1.5 border border-gray-200 text-slate-600 text-sm font-medium px-3.5 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <Upload className="w-3.5 h-3.5" /> Importar CSV
+                </button>
+                <button
+                  onClick={() => setAptFormOpen(true)}
+                  className="flex items-center gap-1.5 bg-slate-900 text-white text-sm font-medium px-3.5 py-2 rounded-lg hover:bg-slate-800 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Nuevo apartamento
+                </button>
+              </>
             )}
             {tab === 'amenidades' && (
               <button
@@ -553,6 +563,12 @@ export default function BuildingDetailPage() {
         isOpen={aptFormOpen}
         onClose={() => setAptFormOpen(false)}
         onCreated={load}
+        buildingId={building.id}
+      />
+      <ApartmentCsvImport
+        isOpen={csvAptOpen}
+        onClose={() => setCsvAptOpen(false)}
+        onImported={load}
         buildingId={building.id}
       />
       {resFormApt && (

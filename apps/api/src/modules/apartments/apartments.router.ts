@@ -18,6 +18,7 @@ const apartmentSchema = z.object({
   hasParking: z.boolean().optional(),
   hasStorage: z.boolean().optional(),
   hasGrill: z.boolean().optional(),
+  status: z.enum(['OCCUPIED', 'VACANT', 'MAINTENANCE']).optional(),
   notes: z.string().optional(),
 });
 
@@ -50,6 +51,25 @@ router.post('/building/:buildingId', requireRole('EMPLOYEE'), asyncHandler(async
   const data = apartmentSchema.parse(req.body);
   const apartment = await apartmentsService.createApartment(req.params.buildingId, req.companyId!, data);
   res.status(201).json({ success: true, data: apartment });
+}));
+
+// POST /apartments/building/:buildingId/bulk
+router.post('/building/:buildingId/bulk', requireRole('EMPLOYEE'), asyncHandler(async (req, res) => {
+  const rows = z.array(apartmentSchema).min(1).max(500).parse(req.body);
+
+  const results = await Promise.allSettled(
+    rows.map(row => apartmentsService.createApartment(req.params.buildingId, req.companyId!, row))
+  );
+
+  const created = results.filter(r => r.status === 'fulfilled').length;
+  const errors  = results
+    .map((r, i) => r.status === 'rejected'
+      ? { row: i + 1, number: rows[i].number, error: (r as PromiseRejectedResult).reason?.message ?? 'Error' }
+      : null
+    )
+    .filter(Boolean);
+
+  res.status(201).json({ success: true, data: { created, errors } });
 }));
 
 // PUT /apartments/:id
