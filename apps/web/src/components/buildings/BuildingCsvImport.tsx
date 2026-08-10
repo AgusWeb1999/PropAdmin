@@ -35,12 +35,37 @@ const TEMPLATE = [
   'Torres Palermo,Av Italia 3000,Montevideo,Palermo,20,USD,2,Edificio con amenities',
 ].join('\n');
 
-// ─── Parser CSV simple ────────────────────────────────────────
+// ─── Parser CSV robusto (carácter a carácter) ────────────────
+function splitCsvLine(line: string, sep = ','): string[] {
+  const cells: string[] = [];
+  let cur = '';
+  let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQ && line[i + 1] === '"') { cur += '"'; i++; }   // escaped quote
+      else inQ = !inQ;
+    } else if (ch === sep && !inQ) {
+      cells.push(cur.trim()); cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  cells.push(cur.trim());
+  return cells;
+}
+
 function parseCsv(text: string): CsvRow[] {
-  const lines = text.trim().split('\n').map(l => l.trim()).filter(Boolean);
+  // Normalizar saltos de línea (Windows \r\n → \n)
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+    .split('\n').map(l => l.trim()).filter(Boolean);
   if (lines.length < 2) return [];
 
-  const header = lines[0].toLowerCase().split(',').map(h => h.trim());
+  // Auto-detectar separador: si el header tiene más ';' que ',' usar ';'
+  const rawHeader = lines[0];
+  const sep = (rawHeader.split(';').length > rawHeader.split(',').length) ? ';' : ',';
+
+  const header = splitCsvLine(rawHeader, sep).map(h => h.toLowerCase().replace(/\s+/g, '_'));
   const idx = (col: string) => header.indexOf(col);
 
   // Validar columnas requeridas
@@ -49,12 +74,8 @@ function parseCsv(text: string): CsvRow[] {
     throw new Error(`Faltan columnas requeridas: ${missingCols.join(', ')}`);
   }
 
-  return lines.slice(1).map((line, i) => {
-    // Dividir respetando comillas
-    const cells = line.match(/("(?:[^"]|"")*"|[^,]*)/g)?.map(c =>
-      c.startsWith('"') ? c.slice(1, -1).replace(/""/g, '"') : c
-    ) ?? line.split(',');
-
+  return lines.slice(1).map((line) => {
+    const cells = splitCsvLine(line, sep);
     const get = (col: string) => cells[idx(col)]?.trim() ?? '';
     const errors: string[] = [];
 
