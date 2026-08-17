@@ -13,6 +13,7 @@ const schema = z.object({
   address:      z.string().min(5, 'Dirección requerida'),
   city:         z.string().min(2, 'Ciudad requerida'),
   department:   z.string().optional(),
+  type:         z.enum(['EDIFICIO', 'COMPLEJO', 'CASA']),
   totalUnits:   z.coerce.number().int().min(1, 'Mínimo 1 unidad'),
   reserveFund:  z.coerce.number().min(0).optional(),
   interestRate: z.coerce.number().min(0).max(100).optional(),
@@ -20,6 +21,12 @@ const schema = z.object({
   notes:        z.string().optional(),
 });
 type FormData = z.infer<typeof schema>;
+
+const TYPE_LABELS: Record<FormData['type'], string> = {
+  EDIFICIO: 'Edificio',
+  COMPLEJO: 'Complejo',
+  CASA: 'Casa',
+};
 
 interface Props {
   isOpen: boolean;
@@ -29,10 +36,12 @@ interface Props {
 
 export function BuildingForm({ isOpen, onClose, onCreated }: Props) {
   const toast = useToast();
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { currency: 'UYU', interestRate: 3 },
+    defaultValues: { currency: 'UYU', interestRate: 3, type: 'EDIFICIO' },
   });
+
+  const type = watch('type');
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -40,21 +49,42 @@ export function BuildingForm({ isOpen, onClose, onCreated }: Props) {
         ...data,
         interestRate: (data.interestRate ?? 3) / 100,
       });
-      toast.success('Edificio creado correctamente');
+      toast.success('Propiedad creada correctamente');
       reset();
       onClose();
       onCreated();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Error al crear edificio');
+      toast.error(e instanceof Error ? e.message : 'Error al crear la propiedad');
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Nuevo edificio" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title="Nueva propiedad" size="lg">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <FormField label="Tipo" error={errors.type?.message} required>
+          <div className="grid grid-cols-3 gap-2">
+            {(Object.keys(TYPE_LABELS) as FormData['type'][]).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => {
+                  setValue('type', t);
+                  if (t === 'CASA') setValue('totalUnits', 1);
+                }}
+                className={
+                  'px-3 py-2 rounded-lg border text-sm font-medium transition-all ' +
+                  (type === t ? 'border-slate-900 bg-slate-900 text-white' : 'border-gray-200 text-slate-600 hover:border-slate-400')
+                }
+              >
+                {TYPE_LABELS[t]}
+              </button>
+            ))}
+          </div>
+        </FormField>
+
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
-            <FormField label="Nombre del edificio" error={errors.name?.message} required>
+            <FormField label="Nombre de la propiedad" error={errors.name?.message} required>
               <input {...register('name')} placeholder="Ej: Edificio Punta Carretas" className={inputClass(errors.name?.message)} />
             </FormField>
           </div>
@@ -74,7 +104,12 @@ export function BuildingForm({ isOpen, onClose, onCreated }: Props) {
           </FormField>
 
           <FormField label="Total de unidades" error={errors.totalUnits?.message} required>
-            <input {...register('totalUnits')} type="number" min={1} placeholder="12" className={inputClass(errors.totalUnits?.message)} />
+            <input
+              {...register('totalUnits')}
+              type="number" min={1} placeholder="12"
+              disabled={type === 'CASA'}
+              className={inputClass(errors.totalUnits?.message)}
+            />
           </FormField>
 
           <FormField label="Moneda">
@@ -108,7 +143,7 @@ export function BuildingForm({ isOpen, onClose, onCreated }: Props) {
             className="flex items-center gap-2 bg-slate-900 text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-60"
           >
             {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            Crear edificio
+            Crear propiedad
           </button>
         </div>
       </form>

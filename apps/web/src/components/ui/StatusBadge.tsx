@@ -19,6 +19,10 @@ const VARIANTS: Record<string, { label: string; className: string }> = {
   COMPLETED:  { label: 'Completada',  className: 'bg-gray-100 text-gray-600' },
   // Maintenance
   IN_PROGRESS: { label: 'En curso',   className: 'bg-blue-100 text-blue-700' },
+  // Rental contracts / Settlements
+  ACTIVE:      { label: 'Activo',      className: 'bg-emerald-100 text-emerald-700' },
+  TERMINATED:  { label: 'Finalizado',  className: 'bg-gray-100 text-gray-600' },
+  TRANSFERRED: { label: 'Transferido', className: 'bg-emerald-100 text-emerald-700' },
   // Priority
   LOW:    { label: 'Baja',    className: 'bg-gray-100 text-gray-600' },
   MEDIUM: { label: 'Media',   className: 'bg-amber-100 text-amber-700' },

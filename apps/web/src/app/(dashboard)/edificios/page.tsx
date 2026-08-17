@@ -13,6 +13,7 @@ interface Building {
   name: string;
   address: string;
   city: string;
+  type: string;
   totalUnits: number;
   currency: string;
   isActive: boolean;
@@ -43,8 +44,8 @@ export default function EdificiosPage() {
   return (
     <>
       <Header
-        title="Edificios"
-        subtitle={`${buildings.length} edificio${buildings.length !== 1 ? 's' : ''}`}
+        title="Propiedades"
+        subtitle={`${buildings.length} propiedad${buildings.length !== 1 ? 'es' : ''}`}
         actions={
           <div className="flex items-center gap-2">
             <button
@@ -57,7 +58,7 @@ export default function EdificiosPage() {
               onClick={() => setFormOpen(true)}
               className="flex items-center gap-1.5 bg-slate-900 text-white text-sm font-medium px-3.5 py-2 rounded-lg hover:bg-slate-800 transition-colors"
             >
-              <Plus className="w-3.5 h-3.5" /> Nuevo edificio
+              <Plus className="w-3.5 h-3.5" /> Nueva propiedad
             </button>
           </div>
         }
@@ -69,7 +70,7 @@ export default function EdificiosPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Buscar edificio..."
+            placeholder="Buscar propiedad..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className={cn(
@@ -105,19 +106,19 @@ export default function EdificiosPage() {
               <Plus className="w-8 h-8 text-slate-400" />
             </div>
             <h3 className="text-sm font-semibold text-slate-900 mb-1">
-              {search ? 'Sin resultados' : 'Sin edificios'}
+              {search ? 'Sin resultados' : 'Sin propiedades'}
             </h3>
             <p className="text-sm text-slate-500 mb-4">
               {search
-                ? `No encontramos edificios con "${search}"`
-                : 'Agrega tu primer edificio para comenzar'}
+                ? `No encontramos propiedades con "${search}"`
+                : 'Agregá tu primera propiedad para comenzar'}
             </p>
             {!search && (
               <button
                 onClick={() => setFormOpen(true)}
                 className="bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors"
               >
-                Agregar edificio
+                Agregar propiedad
               </button>
             )}
           </div>

@@ -4,17 +4,18 @@ import { usePathname } from 'next/navigation';
 import {
   Building2, LayoutDashboard, Home, Users, Receipt,
   CreditCard, AlertTriangle, Calendar, Wrench, FileText,
-  Megaphone, LogOut, ChevronRight, UserCog, TrendingUp,
+  Megaphone, LogOut, ChevronRight, UserCog, TrendingUp, KeyRound,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { label: 'Edificios', href: '/edificios', icon: Building2 },
+  { label: 'Propiedades', href: '/edificios', icon: Building2 },
   { label: 'Apartamentos', href: '/apartamentos', icon: Home },
   { label: 'Residentes', href: '/residentes', icon: Users },
   { label: 'Gastos Comunes', href: '/gastos', icon: Receipt },
+  { label: 'Alquileres', href: '/alquileres', icon: KeyRound },
   { label: 'Pagos', href: '/pagos', icon: CreditCard },
   { label: 'Morosos', href: '/morosos', icon: AlertTriangle },
   { label: 'Reservas', href: '/reservas', icon: Calendar },

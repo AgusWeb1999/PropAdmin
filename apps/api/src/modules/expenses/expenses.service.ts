@@ -60,6 +60,7 @@ export async function generateCharges(
     where: {
       apartment: { buildingId },
       period,
+      expenseId: { not: null }, // excluye cargos de alquiler
       deletedAt: null,
     },
   });
@@ -131,6 +132,7 @@ export async function getDebtSummary(buildingId: string, companyId: string) {
     where: {
       apartment: { buildingId },
       status: { in: ['PENDING', 'PARTIAL', 'OVERDUE'] },
+      expenseId: { not: null }, // excluye cargos de alquiler (rentalContractId) de gastos comunes
       deletedAt: null,
     },
     include: {

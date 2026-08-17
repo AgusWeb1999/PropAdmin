@@ -14,6 +14,7 @@ const buildingSchema = z.object({
   address: z.string().min(5),
   city: z.string().min(2),
   department: z.string().optional(),
+  type: z.enum(['EDIFICIO', 'COMPLEJO', 'CASA']).optional(),
   totalUnits: z.number().int().min(1),
   reserveFund: z.number().min(0).optional(),
   adminFee: z.number().min(0).optional(),

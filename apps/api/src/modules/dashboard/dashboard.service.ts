@@ -24,6 +24,7 @@ export async function getDashboardStats(companyId: string) {
         apartment: { building: { companyId } },
         status: { in: ['OVERDUE', 'PENDING'] },
         dueDate: { lt: now },
+        expenseId: { not: null }, // excluye cargos de alquiler
         deletedAt: null,
       },
       _sum: { amount: true, interestAmount: true },
@@ -65,6 +66,7 @@ export async function getDashboardStats(companyId: string) {
           some: {
             status: { in: ['OVERDUE', 'PENDING'] },
             dueDate: { lt: now },
+            expenseId: { not: null }, // excluye cargos de alquiler
             deletedAt: null,
           },
         },

@@ -205,7 +205,7 @@ export function ApartmentCsvImport({ isOpen, onClose, onImported, buildingId }: 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-slate-500">
-              Cargá todos los apartamentos del edificio de una sola vez.
+              Cargá todos los apartamentos de la propiedad de una sola vez.
             </p>
             <button onClick={downloadTemplate}
               className="flex items-center gap-1.5 text-sm text-slate-600 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 shrink-0 ml-3">

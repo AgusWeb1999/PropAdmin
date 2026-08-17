@@ -157,7 +157,7 @@ export default function ReservasPage() {
             <div>
               <label className="text-xs text-slate-500 mb-2 block">Espacio *</label>
               {commonAreas.length === 0 ? (
-                <p className="text-sm text-slate-400 italic">Este edificio no tiene amenidades configuradas. Andá a Edificios → Amenidades.</p>
+                <p className="text-sm text-slate-400 italic">Esta propiedad no tiene amenidades configuradas. Andá a Propiedades → Amenidades.</p>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {commonAreas.map(a => (
@@ -243,7 +243,7 @@ export default function ReservasPage() {
           ) : reservations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
               <Calendar className="w-10 h-10 text-slate-200" />
-              <p className="text-sm text-slate-400">No hay reservas para este edificio</p>
+              <p className="text-sm text-slate-400">No hay reservas para esta propiedad</p>
             </div>
           ) : (
             <table className="w-full">

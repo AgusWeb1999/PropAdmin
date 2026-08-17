@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/Toaster';
 
 export const metadata: Metadata = {
   title: { template: '%s — PropAdmin', default: 'PropAdmin' },
-  description: 'Sistema de administración de edificios y gastos comunes',
+  description: 'Sistema de administración de propiedades, alquileres y gastos comunes',
   icons: { icon: '/favicon.ico' },
 };
 

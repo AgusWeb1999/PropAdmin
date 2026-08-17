@@ -151,6 +151,7 @@ export async function getDelinquents(companyId: string, buildingId?: string) {
     where: {
       status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] },
       dueDate: { lt: new Date() },
+      expenseId: { not: null }, // excluye cargos de alquiler
       deletedAt: null,
       apartment: {
         building: {

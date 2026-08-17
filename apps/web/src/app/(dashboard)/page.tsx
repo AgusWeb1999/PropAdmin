@@ -88,7 +88,7 @@ export default function DashboardPage() {
             href="/edificios/nuevo"
             className="flex items-center gap-1.5 bg-slate-900 text-white text-sm font-medium px-3.5 py-2 rounded-lg hover:bg-slate-800 transition-colors"
           >
-            <Plus className="w-3.5 h-3.5" /> Nuevo edificio
+            <Plus className="w-3.5 h-3.5" /> Nueva propiedad
           </Link>
         }
       />
@@ -97,7 +97,7 @@ export default function DashboardPage() {
         {/* Stats row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
-            title="Edificios activos"
+            title="Propiedades activas"
             value={s?.totalBuildings ?? 0}
             subtitle={`${s?.totalApartments ?? 0} apartamentos`}
             icon={Building2}

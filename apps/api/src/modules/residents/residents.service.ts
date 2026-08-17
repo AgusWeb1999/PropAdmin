@@ -82,6 +82,7 @@ export async function getResidentDebt(id: string, companyId: string) {
           charges: {
             where: {
               status: { in: ['PENDING', 'PARTIAL', 'OVERDUE'] },
+              expenseId: { not: null }, // excluye cargos de alquiler
               deletedAt: null,
             },
             orderBy: { dueDate: 'asc' },

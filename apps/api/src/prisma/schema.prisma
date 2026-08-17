@@ -13,25 +13,25 @@ datasource db {
 // ─────────────────────────────────────────────────────────────
 
 model Company {
-  id          String    @id @default(cuid())
-  name        String
-  email       String    @unique
-  phone       String?
-  address     String?
-  city        String?
-  country     String    @default("UY")
-  logo        String?
-  plan        Plan      @default(STARTER)
-  isActive    Boolean   @default(true)
-  settings    Json?     // { interestRate, currency, timezone, ... }
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  phone     String?
+  address   String?
+  city      String?
+  country   String    @default("UY")
+  logo      String?
+  plan      Plan      @default(STARTER)
+  isActive  Boolean   @default(true)
+  settings  Json? // { interestRate, currency, timezone, ... }
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
-  users       User[]
-  buildings   Building[]
-  documents   Document[]
-  ipcIndexes  IpcIndex[]
+  users      User[]
+  buildings  Building[]
+  documents  Document[]
+  ipcIndexes IpcIndex[]
 
   @@index([email])
   @@map("companies")
@@ -42,27 +42,27 @@ model Company {
 // ─────────────────────────────────────────────────────────────
 
 model User {
-  id              String    @id @default(cuid())
-  companyId       String
-  email           String    @unique
-  password        String
-  firstName       String
-  lastName        String
-  phone           String?
-  avatar          String?
-  role            Role      @default(EMPLOYEE)
-  isActive        Boolean   @default(true)
-  lastLoginAt     DateTime?
-  passwordResetToken    String?
-  passwordResetExpires  DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  deletedAt       DateTime?
+  id                   String    @id @default(cuid())
+  companyId            String
+  email                String    @unique
+  password             String
+  firstName            String
+  lastName             String
+  phone                String?
+  avatar               String?
+  role                 Role      @default(EMPLOYEE)
+  isActive             Boolean   @default(true)
+  lastLoginAt          DateTime?
+  passwordResetToken   String?
+  passwordResetExpires DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  deletedAt            DateTime?
 
-  company         Company   @relation(fields: [companyId], references: [id])
-  resident        Resident?
-  auditLogs       AuditLog[]
-  refreshTokens   RefreshToken[]
+  company       Company        @relation(fields: [companyId], references: [id])
+  resident      Resident?
+  auditLogs     AuditLog[]
+  refreshTokens RefreshToken[]
 
   @@index([companyId])
   @@index([email])
@@ -76,7 +76,7 @@ model RefreshToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("refresh_tokens")
@@ -87,32 +87,33 @@ model RefreshToken {
 // ─────────────────────────────────────────────────────────────
 
 model Building {
-  id              String    @id @default(cuid())
-  companyId       String
-  name            String
-  address         String
-  city            String
-  department      String?
-  zipCode         String?
-  totalUnits      Int
-  reserveFund     Decimal   @default(0) @db.Decimal(12, 2)
-  adminFee        Decimal   @default(0) @db.Decimal(12, 2)
-  interestRate    Decimal   @default(0.03) @db.Decimal(5, 4)
-  currency        String    @default("UYU")
-  isActive        Boolean   @default(true)
-  imageUrl        String?
-  notes           String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  deletedAt       DateTime?
+  id           String       @id @default(cuid())
+  companyId    String
+  name         String
+  address      String
+  city         String
+  department   String?
+  zipCode      String?
+  type         BuildingType @default(EDIFICIO)
+  totalUnits   Int
+  reserveFund  Decimal      @default(0) @db.Decimal(12, 2)
+  adminFee     Decimal      @default(0) @db.Decimal(12, 2)
+  interestRate Decimal      @default(0.03) @db.Decimal(5, 4)
+  currency     String       @default("UYU")
+  isActive     Boolean      @default(true)
+  imageUrl     String?
+  notes        String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  deletedAt    DateTime?
 
-  company         Company   @relation(fields: [companyId], references: [id])
-  apartments      Apartment[]
-  expenses        Expense[]
-  reservations    Reservation[]
-  announcements   Announcement[]
+  company          Company           @relation(fields: [companyId], references: [id])
+  apartments       Apartment[]
+  expenses         Expense[]
+  reservations     Reservation[]
+  announcements    Announcement[]
   maintenanceTasks MaintenanceTask[]
-  commonAreas     CommonArea[]
+  commonAreas      CommonArea[]
 
   @@index([companyId])
   @@map("buildings")
@@ -123,26 +124,27 @@ model Building {
 // ─────────────────────────────────────────────────────────────
 
 model Apartment {
-  id              String          @id @default(cuid())
-  buildingId      String
-  number          String
-  floor           String?
-  coefficient     Decimal         @db.Decimal(10, 6)
-  area            Decimal?        @db.Decimal(8, 2)
-  bedrooms        Int?
-  bathrooms       Int?
-  hasParking      Boolean         @default(false)
-  hasStorage      Boolean         @default(false)
-  hasGrill        Boolean         @default(false)
-  status          ApartmentStatus @default(OCCUPIED)
-  notes           String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  deletedAt       DateTime?
+  id          String          @id @default(cuid())
+  buildingId  String
+  number      String
+  floor       String?
+  coefficient Decimal         @db.Decimal(10, 6)
+  area        Decimal?        @db.Decimal(8, 2)
+  bedrooms    Int?
+  bathrooms   Int?
+  hasParking  Boolean         @default(false)
+  hasStorage  Boolean         @default(false)
+  hasGrill    Boolean         @default(false)
+  status      ApartmentStatus @default(OCCUPIED)
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  deletedAt   DateTime?
 
-  building        Building        @relation(fields: [buildingId], references: [id])
+  building        Building         @relation(fields: [buildingId], references: [id])
   residents       Resident[]
   charges         Charge[]
+  rentalContracts RentalContract[]
 
   @@unique([buildingId, number])
   @@index([buildingId])
@@ -154,27 +156,29 @@ model Apartment {
 // ─────────────────────────────────────────────────────────────
 
 model Resident {
-  id              String       @id @default(cuid())
-  apartmentId     String
-  userId          String?      @unique
-  firstName       String
-  lastName        String
-  email           String?
-  phone           String?
-  documentId      String?
-  type            ResidentType
-  isActive        Boolean      @default(true)
-  startDate       DateTime
-  endDate         DateTime?
-  notes           String?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  deletedAt       DateTime?
+  id          String       @id @default(cuid())
+  apartmentId String
+  userId      String?      @unique
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String?
+  documentId  String?
+  type        ResidentType
+  isActive    Boolean      @default(true)
+  startDate   DateTime
+  endDate     DateTime?
+  notes       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
 
-  apartment       Apartment    @relation(fields: [apartmentId], references: [id])
-  user            User?        @relation(fields: [userId], references: [id])
+  apartment       Apartment        @relation(fields: [apartmentId], references: [id])
+  user            User?            @relation(fields: [userId], references: [id])
   payments        Payment[]
   reservations    Reservation[]
+  ownedContracts  RentalContract[] @relation("ContractOwner")
+  rentedContracts RentalContract[] @relation("ContractTenant")
 
   @@index([apartmentId])
   @@map("residents")
@@ -185,21 +189,21 @@ model Resident {
 // ─────────────────────────────────────────────────────────────
 
 model Expense {
-  id              String          @id @default(cuid())
-  buildingId      String
-  category        ExpenseCategory
-  description     String
-  amount          Decimal         @db.Decimal(12, 2)
-  period          String          // "2024-01"
-  invoiceNumber   String?
-  invoiceUrl      String?
-  notes           String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  deletedAt       DateTime?
+  id            String          @id @default(cuid())
+  buildingId    String
+  category      ExpenseCategory
+  description   String
+  amount        Decimal         @db.Decimal(12, 2)
+  period        String // "2024-01"
+  invoiceNumber String?
+  invoiceUrl    String?
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  deletedAt     DateTime?
 
-  building        Building        @relation(fields: [buildingId], references: [id])
-  charges         Charge[]
+  building Building @relation(fields: [buildingId], references: [id])
+  charges  Charge[]
 
   @@index([buildingId, period])
   @@map("expenses")
@@ -210,29 +214,33 @@ model Expense {
 // ─────────────────────────────────────────────────────────────
 
 model Charge {
-  id              String       @id @default(cuid())
-  apartmentId     String
-  expenseId       String?
-  description     String
-  amount          Decimal      @db.Decimal(12, 2)
-  dueDate         DateTime
-  period          String       // "2024-01"
-  status          ChargeStatus @default(PENDING)
-  interestAmount  Decimal      @default(0) @db.Decimal(12, 2)
-  discountAmount  Decimal      @default(0) @db.Decimal(12, 2)
-  paidAmount      Decimal      @default(0) @db.Decimal(12, 2)
-  notes           String?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  deletedAt       DateTime?
+  id               String       @id @default(cuid())
+  apartmentId      String
+  expenseId        String?
+  rentalContractId String?
+  description      String
+  amount           Decimal      @db.Decimal(12, 2)
+  dueDate          DateTime
+  period           String // "2024-01"
+  status           ChargeStatus @default(PENDING)
+  interestAmount   Decimal      @default(0) @db.Decimal(12, 2)
+  discountAmount   Decimal      @default(0) @db.Decimal(12, 2)
+  paidAmount       Decimal      @default(0) @db.Decimal(12, 2)
+  notes            String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  deletedAt        DateTime?
 
-  apartment       Apartment    @relation(fields: [apartmentId], references: [id])
-  expense         Expense?     @relation(fields: [expenseId], references: [id])
-  paymentCharges  PaymentCharge[]
-  reservation     Reservation? @relation("ReservationCharge")
+  apartment      Apartment       @relation(fields: [apartmentId], references: [id])
+  expense        Expense?        @relation(fields: [expenseId], references: [id])
+  rentalContract RentalContract? @relation(fields: [rentalContractId], references: [id])
+  paymentCharges PaymentCharge[]
+  reservation    Reservation?    @relation("ReservationCharge")
+  settlement     Settlement?     @relation("SettlementCharge")
 
   @@index([apartmentId, status])
   @@index([apartmentId, period])
+  @@index([rentalContractId, period])
   @@map("charges")
 }
 
@@ -241,35 +249,96 @@ model Charge {
 // ─────────────────────────────────────────────────────────────
 
 model Payment {
-  id              String        @id @default(cuid())
-  residentId      String
-  amount          Decimal       @db.Decimal(12, 2)
-  method          PaymentMethod
-  reference       String?
-  receiptUrl      String?
-  date            DateTime
-  notes           String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  deletedAt       DateTime?
+  id         String        @id @default(cuid())
+  residentId String
+  amount     Decimal       @db.Decimal(12, 2)
+  method     PaymentMethod
+  reference  String?
+  receiptUrl String?
+  date       DateTime
+  notes      String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  deletedAt  DateTime?
 
-  resident        Resident      @relation(fields: [residentId], references: [id])
-  paymentCharges  PaymentCharge[]
+  resident       Resident        @relation(fields: [residentId], references: [id])
+  paymentCharges PaymentCharge[]
 
   @@index([residentId])
   @@map("payments")
 }
 
 model PaymentCharge {
-  paymentId       String
-  chargeId        String
-  amount          Decimal  @db.Decimal(12, 2)
+  paymentId String
+  chargeId  String
+  amount    Decimal @db.Decimal(12, 2)
 
-  payment         Payment  @relation(fields: [paymentId], references: [id])
-  charge          Charge   @relation(fields: [chargeId], references: [id])
+  payment Payment @relation(fields: [paymentId], references: [id])
+  charge  Charge  @relation(fields: [chargeId], references: [id])
 
   @@id([paymentId, chargeId])
   @@map("payment_charges")
+}
+
+// ─────────────────────────────────────────────────────────────
+// RENTAL CONTRACTS (administración de alquileres)
+// ─────────────────────────────────────────────────────────────
+
+model RentalContract {
+  id               String         @id @default(cuid())
+  apartmentId      String
+  ownerResidentId  String
+  tenantResidentId String
+  rentAmount       Decimal        @db.Decimal(12, 2)
+  commissionPct    Decimal        @db.Decimal(5, 4) // 0.1050 = 10.5%
+  currency         String         @default("UYU")
+  startDate        DateTime
+  endDate          DateTime?
+  status           ContractStatus @default(ACTIVE)
+  notes            String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  deletedAt        DateTime?
+
+  apartment      Apartment    @relation(fields: [apartmentId], references: [id])
+  ownerResident  Resident     @relation("ContractOwner", fields: [ownerResidentId], references: [id])
+  tenantResident Resident     @relation("ContractTenant", fields: [tenantResidentId], references: [id])
+  charges        Charge[]
+  settlements    Settlement[]
+
+  @@index([apartmentId])
+  @@index([ownerResidentId])
+  @@index([tenantResidentId])
+  @@map("rental_contracts")
+}
+
+// ─────────────────────────────────────────────────────────────
+// SETTLEMENTS (liquidación al propietario)
+// ─────────────────────────────────────────────────────────────
+
+model Settlement {
+  id               String           @id @default(cuid())
+  rentalContractId String
+  chargeId         String?          @unique
+  period           String // "2024-01"
+  rentAmount       Decimal          @db.Decimal(12, 2) // alquiler pactado
+  rentCollected    Decimal          @db.Decimal(12, 2) // snapshot de lo cobrado al generar
+  commissionAmount Decimal          @db.Decimal(12, 2)
+  deductionsDetail Json? // [{ label, amount }] — impuestos u otras deducciones
+  netToOwner       Decimal          @db.Decimal(12, 2)
+  status           SettlementStatus @default(PENDING)
+  transferredAt    DateTime?
+  notes            String?
+  generatedAt      DateTime         @default(now())
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  deletedAt        DateTime?
+
+  rentalContract RentalContract @relation(fields: [rentalContractId], references: [id])
+  charge         Charge?        @relation("SettlementCharge", fields: [chargeId], references: [id])
+
+  @@unique([rentalContractId, period])
+  @@map("settlements")
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -277,49 +346,49 @@ model PaymentCharge {
 // ─────────────────────────────────────────────────────────────
 
 model CommonArea {
-  id              String    @id @default(cuid())
-  buildingId      String
-  name            String
-  icon            String?   // emoji: "🔥", "🏊", "💪", etc.
-  description     String?
-  capacity        Int?
-  pricePerUse     Decimal   @default(0) @db.Decimal(10, 2)
-  openTime        String?   // "08:00"
-  closeTime       String?   // "22:00"
-  rules           String?
-  isActive        Boolean   @default(true)
-  imageUrl        String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  deletedAt       DateTime?
+  id          String    @id @default(cuid())
+  buildingId  String
+  name        String
+  icon        String? // emoji: "🔥", "🏊", "💪", etc.
+  description String?
+  capacity    Int?
+  pricePerUse Decimal   @default(0) @db.Decimal(10, 2)
+  openTime    String? // "08:00"
+  closeTime   String? // "22:00"
+  rules       String?
+  isActive    Boolean   @default(true)
+  imageUrl    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 
-  building        Building  @relation(fields: [buildingId], references: [id])
-  reservations    Reservation[]
+  building     Building      @relation(fields: [buildingId], references: [id])
+  reservations Reservation[]
 
   @@index([buildingId])
   @@map("common_areas")
 }
 
 model Reservation {
-  id              String            @id @default(cuid())
-  buildingId      String
-  commonAreaId    String
-  residentId      String
-  startDateTime   DateTime
-  endDateTime     DateTime
-  status          ReservationStatus @default(PENDING)
-  totalCost       Decimal           @default(0) @db.Decimal(10, 2)
-  notes           String?
-  cancelReason    String?
-  chargeId        String?           @unique
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  deletedAt       DateTime?
+  id            String            @id @default(cuid())
+  buildingId    String
+  commonAreaId  String
+  residentId    String
+  startDateTime DateTime
+  endDateTime   DateTime
+  status        ReservationStatus @default(PENDING)
+  totalCost     Decimal           @default(0) @db.Decimal(10, 2)
+  notes         String?
+  cancelReason  String?
+  chargeId      String?           @unique
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  deletedAt     DateTime?
 
-  building        Building    @relation(fields: [buildingId], references: [id])
-  commonArea      CommonArea  @relation(fields: [commonAreaId], references: [id])
-  resident        Resident    @relation(fields: [residentId], references: [id])
-  charge          Charge?     @relation("ReservationCharge", fields: [chargeId], references: [id])
+  building   Building   @relation(fields: [buildingId], references: [id])
+  commonArea CommonArea @relation(fields: [commonAreaId], references: [id])
+  resident   Resident   @relation(fields: [residentId], references: [id])
+  charge     Charge?    @relation("ReservationCharge", fields: [chargeId], references: [id])
 
   @@index([buildingId, startDateTime])
   @@index([commonAreaId, startDateTime])
@@ -331,18 +400,18 @@ model Reservation {
 // ─────────────────────────────────────────────────────────────
 
 model Announcement {
-  id              String    @id @default(cuid())
-  buildingId      String
-  title           String
-  content         String
-  isImportant     Boolean   @default(false)
-  publishedAt     DateTime  @default(now())
-  expiresAt       DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  deletedAt       DateTime?
+  id          String    @id @default(cuid())
+  buildingId  String
+  title       String
+  content     String
+  isImportant Boolean   @default(false)
+  publishedAt DateTime  @default(now())
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 
-  building        Building  @relation(fields: [buildingId], references: [id])
+  building Building @relation(fields: [buildingId], references: [id])
 
   @@index([buildingId])
   @@map("announcements")
@@ -353,23 +422,23 @@ model Announcement {
 // ─────────────────────────────────────────────────────────────
 
 model MaintenanceTask {
-  id              String              @id @default(cuid())
-  buildingId      String
-  title           String
-  description     String?
-  category        MaintenanceCategory
-  priority        Priority            @default(MEDIUM)
-  status          TaskStatus          @default(PENDING)
-  assignedTo      String?
-  scheduledDate   DateTime?
-  completedDate   DateTime?
-  cost            Decimal?            @db.Decimal(12, 2)
-  notes           String?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  deletedAt       DateTime?
+  id            String              @id @default(cuid())
+  buildingId    String
+  title         String
+  description   String?
+  category      MaintenanceCategory
+  priority      Priority            @default(MEDIUM)
+  status        TaskStatus          @default(PENDING)
+  assignedTo    String?
+  scheduledDate DateTime?
+  completedDate DateTime?
+  cost          Decimal?            @db.Decimal(12, 2)
+  notes         String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  deletedAt     DateTime?
 
-  building        Building            @relation(fields: [buildingId], references: [id])
+  building Building @relation(fields: [buildingId], references: [id])
 
   @@index([buildingId, status])
   @@map("maintenance_tasks")
@@ -380,22 +449,22 @@ model MaintenanceTask {
 // ─────────────────────────────────────────────────────────────
 
 model Document {
-  id              String           @id @default(cuid())
-  companyId       String
-  buildingId      String?
-  name            String
-  description     String?
-  category        DocumentCategory
-  fileUrl         String
-  fileSize        Int?
-  mimeType        String?
-  uploadedById    String
-  isPublic        Boolean          @default(false)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  deletedAt       DateTime?
+  id           String           @id @default(cuid())
+  companyId    String
+  buildingId   String?
+  name         String
+  description  String?
+  category     DocumentCategory
+  fileUrl      String
+  fileSize     Int?
+  mimeType     String?
+  uploadedById String
+  isPublic     Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  deletedAt    DateTime?
 
-  company         Company          @relation(fields: [companyId], references: [id])
+  company Company @relation(fields: [companyId], references: [id])
 
   @@index([companyId])
   @@index([buildingId])
@@ -410,12 +479,12 @@ model IpcIndex {
   id        String   @id @default(cuid())
   companyId String
   year      Int
-  month     Int      // 1–12
-  value     Float    // variación mensual decimal: 0.008 = 0.8%
+  month     Int // 1–12
+  value     Float // variación mensual decimal: 0.008 = 0.8%
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  company   Company  @relation(fields: [companyId], references: [id])
+  company Company @relation(fields: [companyId], references: [id])
 
   @@unique([companyId, year, month])
   @@index([companyId])
@@ -427,19 +496,19 @@ model IpcIndex {
 // ─────────────────────────────────────────────────────────────
 
 model AuditLog {
-  id          String   @id @default(cuid())
-  userId      String
-  companyId   String
-  action      String   // "CREATE", "UPDATE", "DELETE", "LOGIN"
-  entity      String   // "Payment", "Expense", etc.
-  entityId    String
-  oldValues   Json?
-  newValues   Json?
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  companyId String
+  action    String // "CREATE", "UPDATE", "DELETE", "LOGIN"
+  entity    String // "Payment", "Expense", etc.
+  entityId  String
+  oldValues Json?
+  newValues Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
 
-  user        User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@index([companyId, createdAt])
   @@index([entity, entityId])
@@ -464,10 +533,26 @@ enum Role {
   RESIDENT
 }
 
+enum BuildingType {
+  EDIFICIO
+  COMPLEJO
+  CASA
+}
+
 enum ApartmentStatus {
   OCCUPIED
   VACANT
   MAINTENANCE
+}
+
+enum ContractStatus {
+  ACTIVE
+  TERMINATED
+}
+
+enum SettlementStatus {
+  PENDING
+  TRANSFERRED
 }
 
 enum ResidentType {

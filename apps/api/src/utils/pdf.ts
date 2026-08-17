@@ -286,3 +286,93 @@ export function generateAccountStatement(data: {
 
   return doc;
 }
+
+// ── Settlement (liquidación al propietario) ───────────────────────────────
+export type SettlementPdfData = {
+  company: { name: string };
+  apartment: { number: string; building: { name: string; address: string } };
+  owner: { firstName: string; lastName: string };
+  tenant: { firstName: string; lastName: string };
+  period: string;
+  currency: string;
+  rentAmount: number;
+  rentCollected: number;
+  commissionPct: number;
+  commissionAmount: number;
+  deductionsDetail: Array<{ label: string; amount: number }>;
+  netToOwner: number;
+  status: string;
+  transferredAt: Date | null;
+};
+
+export function generateSettlementPdf(data: SettlementPdfData): PDFKit.PDFDocument {
+  const doc = new PDFDocument({ size: 'A4', margin: 40 });
+  const currency = data.currency ?? 'UYU';
+  const fmt = (n: number) => `${currency} ${n.toLocaleString('es-UY', { minimumFractionDigits: 0 })}`;
+  const today = new Date().toLocaleDateString('es-UY', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  // Header
+  doc.fontSize(16).font('Helvetica-Bold').text(data.company.name, { align: 'center' });
+  doc.fontSize(9).font('Helvetica').fillColor('#666')
+    .text(`${data.apartment.building.name} — ${data.apartment.building.address}, Apto ${data.apartment.number}`, { align: 'center' });
+  doc.fontSize(9).font('Helvetica').text(`Generado el ${today}`, { align: 'center' }).fillColor('#000');
+  doc.moveDown(0.5);
+  doc.fontSize(14).font('Helvetica-Bold').text(`LIQUIDACIÓN — ${data.period}`, { align: 'center' });
+  doc.moveDown(0.5);
+  doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor('#000').stroke().moveDown(0.6);
+
+  // Propietario / inquilino
+  const left = 40;
+  const lineH = 18;
+  let y = doc.y;
+  const field = (label: string, value: string) => {
+    doc.font('Helvetica-Bold').fontSize(10).text(label, left, y);
+    doc.font('Helvetica').fontSize(10).text(value, left + 130, y);
+    y += lineH;
+  };
+  field('Propietario:', `${data.owner.firstName} ${data.owner.lastName}`);
+  field('Inquilino:', `${data.tenant.firstName} ${data.tenant.lastName}`);
+  field('Comisión administración:', `${(data.commissionPct * 100).toFixed(2)}%`);
+  doc.y = y + 8;
+
+  doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor('#ccc').stroke().moveDown(0.5);
+
+  // Breakdown table
+  const rowH = 18;
+  const labelX = 40;
+  const amountX = 420;
+
+  const row = (label: string, amount: number, opts: { bold?: boolean; negative?: boolean } = {}) => {
+    doc.font(opts.bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(10);
+    doc.text(label, labelX, doc.y, { width: 360 });
+    const text = `${opts.negative ? '- ' : ''}${fmt(Math.abs(amount))}`;
+    doc.text(text, amountX, doc.y, { width: 95, align: 'right' });
+    doc.moveDown(0.15);
+    doc.y += rowH - doc.currentLineHeight();
+  };
+
+  row('Alquiler pactado', data.rentAmount);
+  row('Alquiler cobrado', data.rentCollected);
+  row(`Comisión de administración (${(data.commissionPct * 100).toFixed(2)}%)`, data.commissionAmount, { negative: true });
+
+  for (const d of data.deductionsDetail) {
+    row(d.label, d.amount, { negative: true });
+  }
+
+  doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor('#000').stroke().moveDown(0.5);
+  doc.fontSize(13).font('Helvetica-Bold')
+    .text('NETO A TRANSFERIR AL PROPIETARIO:', labelX, doc.y, { width: 360 })
+    .text(fmt(data.netToOwner), amountX, doc.y, { width: 95, align: 'right' });
+  doc.moveDown(1);
+
+  doc.fontSize(9).font('Helvetica').fillColor('#666')
+    .text(
+      data.status === 'TRANSFERRED' && data.transferredAt
+        ? `Transferido el ${new Date(data.transferredAt).toLocaleDateString('es-UY')}`
+        : 'Pendiente de transferencia',
+      { align: 'center' }
+    );
+  doc.fillColor('#000');
+
+  return doc;
+}

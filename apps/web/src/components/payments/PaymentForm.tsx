@@ -12,7 +12,7 @@ import { formatCurrency, PAYMENT_METHOD_LABELS } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
 const schema = z.object({
-  buildingId: z.string().min(1, 'Seleccioná un edificio'),
+  buildingId: z.string().min(1, 'Seleccioná una propiedad'),
   apartmentId: z.string().min(1, 'Seleccioná un apartamento'),
   residentId: z.string().min(1, 'Seleccioná un residente'),
   amount: z.coerce.number().positive('El monto debe ser mayor a 0'),
@@ -130,7 +130,7 @@ export function PaymentForm({ isOpen, onClose, onCreated }: Props) {
 
         {/* Step 1: Select building / apartment / resident */}
         <div className="grid grid-cols-3 gap-3">
-          <FormField label="Edificio" error={errors.buildingId?.message} required>
+          <FormField label="Propiedad" error={errors.buildingId?.message} required>
             <select {...register('buildingId')} className={inputClass(errors.buildingId?.message)}>
               <option value="">Seleccionar...</option>
               {buildings.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}

@@ -88,7 +88,7 @@ export default function GastosPage() {
     <>
       <Header
         title="Gastos Comunes"
-        subtitle="Gestión de gastos mensuales por edificio"
+        subtitle="Gestión de gastos mensuales por propiedad"
         actions={
           <button
             onClick={() => setShowForm(true)}
@@ -147,7 +147,7 @@ export default function GastosPage() {
               <Plus className="w-6 h-6 text-slate-400" />
             </div>
             <p className="text-sm font-semibold text-slate-900">Sin gastos para este período</p>
-            <p className="text-sm text-slate-400 mt-1">Agrega los gastos del edificio para generar las expensas</p>
+            <p className="text-sm text-slate-400 mt-1">Agrega los gastos de la propiedad para generar las expensas</p>
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">

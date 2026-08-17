@@ -38,14 +38,14 @@ export default function ApartamentosPage() {
     <>
       <Header
         title="Apartamentos"
-        subtitle="Todos los apartamentos de tus edificios"
+        subtitle="Todos los apartamentos de tus propiedades"
         actions={
           <select
             value={buildingFilter}
             onChange={e => setBuildingFilter(e.target.value)}
             className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-slate-700 outline-none focus:border-slate-400"
           >
-            <option value="">Todos los edificios</option>
+            <option value="">Todas las propiedades</option>
             {buildings.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
         }
@@ -66,7 +66,7 @@ export default function ApartamentosPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
-                  {['Apt', 'Piso', 'Edificio', 'Residente', 'Estado', 'Deuda', ''].map(h => (
+                  {['Apt', 'Piso', 'Propiedad', 'Residente', 'Estado', 'Deuda', ''].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
                   ))}
                 </tr>

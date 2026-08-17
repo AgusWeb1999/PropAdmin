@@ -192,14 +192,14 @@ export default function BuildingDetailPage() {
           <Home className="w-8 h-8 text-slate-300" />
         </div>
         <div>
-          <h2 className="text-base font-semibold text-slate-900 mb-1">Edificio no encontrado</h2>
-          <p className="text-sm text-slate-400">El edificio que buscás no existe o fue eliminado.</p>
+          <h2 className="text-base font-semibold text-slate-900 mb-1">Propiedad no encontrada</h2>
+          <p className="text-sm text-slate-400">La propiedad que buscás no existe o fue eliminada.</p>
         </div>
         <button
           onClick={() => router.push('/edificios')}
           className="flex items-center gap-1.5 bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors"
         >
-          <ArrowLeft className="w-3.5 h-3.5" /> Volver a edificios
+          <ArrowLeft className="w-3.5 h-3.5" /> Volver a propiedades
         </button>
       </div>
     );
@@ -270,7 +270,7 @@ export default function BuildingDetailPage() {
       <div className="p-6 space-y-5 animate-slide-up">
         {/* Back */}
         <Link href="/edificios" className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors w-fit">
-          <ArrowLeft className="w-3.5 h-3.5" /> Volver a edificios
+          <ArrowLeft className="w-3.5 h-3.5" /> Volver a propiedades
         </Link>
 
         {/* Stats row */}
@@ -314,7 +314,7 @@ export default function BuildingDetailPage() {
             {building.apartments.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16">
                 <p className="text-sm font-semibold text-slate-900 mb-1">Sin apartamentos</p>
-                <p className="text-sm text-slate-500 mb-4">Agregá las unidades del edificio</p>
+                <p className="text-sm text-slate-500 mb-4">Agregá las unidades de la propiedad</p>
                 <button
                   onClick={() => setAptFormOpen(true)}
                   className="bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-800"

@@ -15,7 +15,7 @@ export async function getAllApartments(companyId: string, buildingId?: string) {
         take: 1,
       },
       charges: {
-        where: { status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] }, deletedAt: null },
+        where: { status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] }, expenseId: { not: null }, deletedAt: null },
         select: { amount: true, interestAmount: true, paidAmount: true },
       },
     },
@@ -37,7 +37,7 @@ export async function getApartments(buildingId: string, companyId: string) {
         select: { id: true, firstName: true, lastName: true, type: true, phone: true, email: true },
       },
       charges: {
-        where: { status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] }, deletedAt: null },
+        where: { status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] }, expenseId: { not: null }, deletedAt: null },
         select: { id: true, amount: true, interestAmount: true, status: true, dueDate: true },
       },
     },
@@ -58,7 +58,7 @@ export async function getApartmentById(id: string, companyId: string) {
         },
       },
       charges: {
-        where: { deletedAt: null },
+        where: { expenseId: { not: null }, deletedAt: null },
         orderBy: { dueDate: 'desc' },
         take: 24,
       },
@@ -125,7 +125,7 @@ export async function getApartmentStatement(id: string, companyId: string) {
       building: { select: { name: true, address: true, company: { select: { name: true } } } },
       residents: { where: { isActive: true }, take: 1 },
       charges: {
-        where: { deletedAt: null },
+        where: { expenseId: { not: null }, deletedAt: null },
         include: {
           paymentCharges: { include: { payment: true } },
         },

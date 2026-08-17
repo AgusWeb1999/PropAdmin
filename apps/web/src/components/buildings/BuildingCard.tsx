@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Building2, Home, AlertTriangle, ChevronRight } from 'lucide-react';
+import { Building2, Home, Warehouse, AlertTriangle, ChevronRight } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
 
 interface Building {
@@ -7,10 +7,17 @@ interface Building {
   name: string;
   address: string;
   city: string;
+  type?: string;
   totalUnits: number;
   currency: string;
   _count?: { apartments: number };
 }
+
+const TYPE_META: Record<string, { label: string; icon: typeof Building2 }> = {
+  EDIFICIO: { label: 'Edificio', icon: Building2 },
+  COMPLEJO: { label: 'Complejo', icon: Warehouse },
+  CASA: { label: 'Casa', icon: Home },
+};
 
 interface BuildingCardProps {
   building: Building;
@@ -26,6 +33,8 @@ export function BuildingCard({ building, stats, className }: BuildingCardProps) 
   const occupancy = stats && building.totalUnits > 0
     ? Math.round((stats.occupiedApartments / building.totalUnits) * 100)
     : null;
+  const typeMeta = TYPE_META[building.type ?? 'EDIFICIO'] ?? TYPE_META.EDIFICIO;
+  const TypeIcon = typeMeta.icon;
 
   return (
     <Link
@@ -38,10 +47,15 @@ export function BuildingCard({ building, stats, className }: BuildingCardProps) 
     >
       <div className="flex items-start gap-3 mb-4">
         <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 group-hover:bg-slate-900 transition-colors">
-          <Building2 className="w-5 h-5 text-slate-600 group-hover:text-white transition-colors" />
+          <TypeIcon className="w-5 h-5 text-slate-600 group-hover:text-white transition-colors" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-slate-900 truncate">{building.name}</h3>
+          <div className="flex items-center gap-1.5">
+            <h3 className="text-sm font-semibold text-slate-900 truncate">{building.name}</h3>
+            <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">
+              {typeMeta.label}
+            </span>
+          </div>
           <p className="text-xs text-slate-400 truncate">{building.address}</p>
           <p className="text-xs text-slate-400">{building.city}</p>
         </div>

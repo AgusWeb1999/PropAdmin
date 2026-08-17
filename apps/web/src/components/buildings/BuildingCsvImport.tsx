@@ -184,18 +184,18 @@ export function BuildingCsvImport({ isOpen, onClose, onImported }: Props) {
     const blob = new Blob([TEMPLATE], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
-    a.href = url; a.download = 'plantilla_edificios.csv';
+    a.href = url; a.download = 'plantilla_propiedades.csv';
     a.click(); URL.revokeObjectURL(url);
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Importar edificios desde CSV" size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Importar propiedades desde CSV" size="lg">
       {/* ── Step: upload ─────────────────────────────────────── */}
       {step === 'upload' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-slate-500">
-              Subí un archivo CSV con los edificios. Descargá la plantilla para ver el formato exacto.
+              Subí un archivo CSV con las propiedades. Descargá la plantilla para ver el formato exacto.
             </p>
             <button onClick={downloadTemplate}
               className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 shrink-0 ml-3">
@@ -318,7 +318,7 @@ export function BuildingCsvImport({ isOpen, onClose, onImported }: Props) {
             <button onClick={handleImport} disabled={importing || validRows.length === 0}
               className="flex items-center gap-2 bg-slate-900 text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:bg-slate-800 disabled:opacity-60 transition-colors">
               {importing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              Importar {validRows.length} edificio{validRows.length !== 1 ? 's' : ''}
+              Importar {validRows.length} propiedad{validRows.length !== 1 ? 'es' : ''}
             </button>
           </div>
         </div>
@@ -330,7 +330,7 @@ export function BuildingCsvImport({ isOpen, onClose, onImported }: Props) {
           <div className="flex flex-col items-center gap-3 py-4">
             <CheckCircle2 className="w-12 h-12 text-emerald-500" />
             <p className="text-lg font-semibold text-slate-900">
-              {result.created} edificio{result.created !== 1 ? 's' : ''} importado{result.created !== 1 ? 's' : ''}
+              {result.created} propiedad{result.created !== 1 ? 'es' : ''} importada{result.created !== 1 ? 's' : ''}
             </p>
           </div>
 

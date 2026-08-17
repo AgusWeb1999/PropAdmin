@@ -25,7 +25,7 @@ export async function getBuildingById(id: string, companyId: string) {
             select: { id: true, firstName: true, lastName: true, type: true, phone: true, email: true },
           },
           charges: {
-            where: { deletedAt: null, status: { not: 'PAID' } },
+            where: { deletedAt: null, status: { not: 'PAID' }, expenseId: { not: null } },
             select: { id: true, amount: true, interestAmount: true, paidAmount: true, status: true },
           },
         },
@@ -44,6 +44,7 @@ export async function createBuilding(companyId: string, data: {
   address: string;
   city: string;
   department?: string;
+  type?: string;
   totalUnits: number;
   reserveFund?: number;
   adminFee?: number;
@@ -52,7 +53,7 @@ export async function createBuilding(companyId: string, data: {
   notes?: string;
 }) {
   return prisma.building.create({
-    data: { ...data, companyId },
+    data: { ...data, companyId } as Parameters<typeof prisma.building.create>[0]['data'],
   });
 }
 
@@ -61,6 +62,7 @@ export async function updateBuilding(id: string, companyId: string, data: Partia
   address: string;
   city: string;
   department: string;
+  type: string;
   totalUnits: number;
   reserveFund: number;
   adminFee: number;
@@ -73,7 +75,10 @@ export async function updateBuilding(id: string, companyId: string, data: Partia
   const building = await prisma.building.findFirst({ where: { id, companyId, deletedAt: null } });
   if (!building) throw new AppError('Edificio no encontrado', 404, 'NOT_FOUND');
 
-  return prisma.building.update({ where: { id }, data });
+  return prisma.building.update({
+    where: { id },
+    data: data as Parameters<typeof prisma.building.update>[0]['data'],
+  });
 }
 
 export async function deleteBuilding(id: string, companyId: string) {
@@ -97,7 +102,7 @@ export async function getDebtReportData(id: string, companyId: string) {
             take: 1,
           },
           charges: {
-            where: { deletedAt: null, status: { not: 'PAID' } },
+            where: { deletedAt: null, status: { not: 'PAID' }, expenseId: { not: null } },
             select: { description: true, period: true, amount: true, interestAmount: true, paidAmount: true, status: true, dueDate: true },
             orderBy: { dueDate: 'asc' },
           },
@@ -148,7 +153,7 @@ export async function notifyResidents(id: string, companyId: string): Promise<{ 
             take: 1,
           },
           charges: {
-            where: { deletedAt: null, status: { not: 'PAID' } },
+            where: { deletedAt: null, status: { not: 'PAID' }, expenseId: { not: null } },
             select: { description: true, period: true, amount: true, interestAmount: true, paidAmount: true, status: true, dueDate: true },
             orderBy: { dueDate: 'asc' },
           },
@@ -235,12 +240,12 @@ export async function getBuildingStats(id: string, companyId: string) {
     prisma.apartment.count({ where: { buildingId: id, deletedAt: null } }),
     prisma.apartment.count({ where: { buildingId: id, status: 'OCCUPIED', deletedAt: null } }),
     prisma.charge.aggregate({
-      where: { apartment: { buildingId: id }, status: 'PENDING', deletedAt: null },
+      where: { apartment: { buildingId: id }, status: 'PENDING', expenseId: { not: null }, deletedAt: null },
       _sum: { amount: true },
       _count: true,
     }),
     prisma.charge.aggregate({
-      where: { apartment: { buildingId: id }, status: 'OVERDUE', deletedAt: null },
+      where: { apartment: { buildingId: id }, status: 'OVERDUE', expenseId: { not: null }, deletedAt: null },
       _sum: { amount: true, interestAmount: true },
       _count: true,
     }),

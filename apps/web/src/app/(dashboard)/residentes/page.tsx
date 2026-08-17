@@ -43,7 +43,7 @@ export default function ResidentesPage() {
     <>
       <Header
         title="Residentes"
-        subtitle="Todos los residentes de tus edificios"
+        subtitle="Todos los residentes de tus propiedades"
         actions={
           <div className="flex items-center gap-2">
             <input
@@ -57,7 +57,7 @@ export default function ResidentesPage() {
               onChange={e => setBuildingFilter(e.target.value)}
               className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-slate-700 outline-none focus:border-slate-400"
             >
-              <option value="">Todos los edificios</option>
+              <option value="">Todas las propiedades</option>
               {buildings.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </div>
@@ -79,7 +79,7 @@ export default function ResidentesPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
-                  {['Nombre', 'Tipo', 'Apartamento', 'Edificio', 'Teléfono', 'Email', 'Estado'].map(h => (
+                  {['Nombre', 'Tipo', 'Apartamento', 'Propiedad', 'Teléfono', 'Email', 'Estado'].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
                   ))}
                 </tr>
