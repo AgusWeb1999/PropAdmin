@@ -21,6 +21,7 @@ import documentsRouter from './modules/documents/documents.router';
 import announcementsRouter from './modules/announcements/announcements.router';
 import usersRouter from './modules/users/users.router';
 import commonAreasRouter from './modules/common-areas/common-areas.router';
+import ipcRouter from './modules/ipc/ipc.router';
 
 const app = express();
 
@@ -75,6 +76,7 @@ v1.use('/announcements', announcementsRouter);
 v1.use('/dashboard',     dashboardRouter);
 v1.use('/users',         usersRouter);
 v1.use('/common-areas',  commonAreasRouter);
+v1.use('/ipc',           ipcRouter);
 
 app.use('/api/v1', v1);
 

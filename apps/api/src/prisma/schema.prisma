@@ -31,6 +31,7 @@ model Company {
   users       User[]
   buildings   Building[]
   documents   Document[]
+  ipcIndexes  IpcIndex[]
 
   @@index([email])
   @@map("companies")
@@ -399,6 +400,26 @@ model Document {
   @@index([companyId])
   @@index([buildingId])
   @@map("documents")
+}
+
+// ─────────────────────────────────────────────────────────────
+// IPC INDEXES (Índice de Precios al Consumo — Uruguay)
+// ─────────────────────────────────────────────────────────────
+
+model IpcIndex {
+  id        String   @id @default(cuid())
+  companyId String
+  year      Int
+  month     Int      // 1–12
+  value     Float    // variación mensual decimal: 0.008 = 0.8%
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company   Company  @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, year, month])
+  @@index([companyId])
+  @@map("ipc_indexes")
 }
 
 // ─────────────────────────────────────────────────────────────

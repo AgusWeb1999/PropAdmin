@@ -1,7 +1,7 @@
 import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '../../prisma/client';
 import { AppError } from '../../middleware/error.middleware';
-import { calculateInterest } from '../../utils/interest';
+import { calculateInterestWithIpc } from '../../utils/interest';
 
 export async function getExpenses(buildingId: string, companyId: string, period?: string) {
   // Verify building belongs to company
@@ -139,19 +139,31 @@ export async function getDebtSummary(buildingId: string, companyId: string) {
     orderBy: { dueDate: 'asc' },
   });
 
-  // Update interest amounts for overdue charges
+  // Fetch IPC indexes for this company
+  const ipcIndexes = await prisma.ipcIndex.findMany({
+    where: { companyId },
+    select: { year: true, month: true, value: true },
+  });
+
   const now = new Date();
-  const interestRate = Number(building.interestRate);
 
   return charges.map((charge) => {
-    let interest = Number(charge.interestAmount);
+    let interestAmount = Number(charge.interestAmount);
+    let ipcAdjustment  = 0;
+    let monthlyInterest = 0;
+    let monthsOverdue   = 0;
+
     if (charge.status === 'OVERDUE' || (charge.status === 'PENDING' && charge.dueDate < now)) {
-      interest = calculateInterest(Number(charge.amount), interestRate, charge.dueDate, now);
+      ({ interestAmount, ipcAdjustment, monthlyInterest, monthsOverdue } =
+        calculateInterestWithIpc(Number(charge.amount), charge.dueDate, ipcIndexes, now));
     }
     return {
       ...charge,
-      interestAmount: interest,
-      totalDebt: Number(charge.amount) + interest,
+      interestAmount,
+      ipcAdjustment,
+      monthlyInterest,
+      monthsOverdue,
+      totalDebt: Number(charge.amount) + interestAmount,
     };
   });
 }

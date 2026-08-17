@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import {
   Building2, LayoutDashboard, Home, Users, Receipt,
   CreditCard, AlertTriangle, Calendar, Wrench, FileText,
-  Megaphone, LogOut, ChevronRight, UserCog,
+  Megaphone, LogOut, ChevronRight, UserCog, TrendingUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,6 +22,7 @@ const NAV_ITEMS = [
   { label: 'Comunicados', href: '/comunicados', icon: Megaphone },
   { label: 'Documentos', href: '/documentos', icon: FileText },
   { label: 'Usuarios', href: '/usuarios', icon: UserCog },
+  { label: 'Índices IPC', href: '/indices-ipc', icon: TrendingUp },
 ];
 
 export function Sidebar() {
