@@ -21,10 +21,11 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs \
     && adduser --system --uid 1001 apiuser
 
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/src/prisma ./prisma
-COPY package.json ./
+COPY --from=deps --chown=apiuser:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=apiuser:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=apiuser:nodejs /app/dist ./dist
+COPY --from=builder --chown=apiuser:nodejs /app/src/prisma ./src/prisma
+COPY --chown=apiuser:nodejs package.json ./
 
 RUN mkdir -p uploads && chown apiuser:nodejs uploads
 USER apiuser
