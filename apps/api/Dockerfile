@@ -31,4 +31,7 @@ RUN mkdir -p uploads && chown apiuser:nodejs uploads
 USER apiuser
 
 EXPOSE 4000
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+# La detección automática de OpenSSL de Prisma está rota en Alpine moderno
+# (asume 1.1.x, que ya no existe; node:20-alpine solo trae 3.x). Forzamos
+# el motor correcto según arquitectura en vez de dejar que la adivine.
+CMD ["sh", "-c", "if [ \"$(uname -m)\" = aarch64 ]; then export PRISMA_QUERY_ENGINE_LIBRARY=/app/node_modules/.prisma/client/libquery_engine-linux-musl-arm64-openssl-3.0.x.so.node; else export PRISMA_QUERY_ENGINE_LIBRARY=/app/node_modules/.prisma/client/libquery_engine-linux-musl-openssl-3.0.x.so.node; fi; exec node dist/server.js"]
