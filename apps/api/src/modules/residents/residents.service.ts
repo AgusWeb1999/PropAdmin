@@ -94,3 +94,12 @@ export async function getResidentDebt(id: string, companyId: string) {
   if (!resident) throw new AppError('Residente no encontrado', 404, 'NOT_FOUND');
   return resident;
 }
+
+export async function deleteResident(id: string, companyId: string) {
+  const resident = await prisma.resident.findFirst({
+    where: { id, apartment: { building: { companyId } }, deletedAt: null },
+  });
+  if (!resident) throw new AppError('Residente no encontrado', 404, 'NOT_FOUND');
+
+  return prisma.resident.update({ where: { id }, data: { deletedAt: new Date() } });
+}

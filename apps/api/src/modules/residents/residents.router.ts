@@ -56,4 +56,10 @@ router.put('/:id', requireRole('EMPLOYEE'), asyncHandler(async (req, res) => {
   res.json({ success: true, data: resident });
 }));
 
+// DELETE /residents/:id
+router.delete('/:id', requireRole('COMPANY_ADMIN'), asyncHandler(async (req, res) => {
+  await residentsService.deleteResident(req.params.id, req.companyId!);
+  res.json({ success: true, message: 'Residente eliminado' });
+}));
+
 export default router;

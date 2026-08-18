@@ -164,6 +164,39 @@ export default function BuildingDetailPage() {
     } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error'); }
   };
 
+  const [deletingBuilding, setDeletingBuilding] = useState(false);
+  const handleDeleteBuilding = async () => {
+    if (!building) return;
+    if (!confirm(`¿Eliminás la propiedad "${building.name}"? Esta acción no se puede deshacer desde la app.`)) return;
+    setDeletingBuilding(true);
+    try {
+      await api.delete(`/buildings/${building.id}`);
+      toast.success('Propiedad eliminada');
+      router.push('/edificios');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Error al eliminar la propiedad');
+      setDeletingBuilding(false);
+    }
+  };
+
+  const handleDeleteApartment = async (apt: Apartment) => {
+    if (!confirm(`¿Eliminás el apartamento ${apt.number}? Se pierde el acceso a sus residentes y cargos desde la app.`)) return;
+    try {
+      await api.delete(`/apartments/${apt.id}`);
+      toast.success('Apartamento eliminado');
+      load();
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error al eliminar el apartamento'); }
+  };
+
+  const handleDeleteResident = async (resident: Resident) => {
+    if (!confirm(`¿Eliminás a ${resident.firstName} ${resident.lastName}?`)) return;
+    try {
+      await api.delete(`/residents/${resident.id}`);
+      toast.success('Residente eliminado');
+      load();
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error al eliminar el residente'); }
+  };
+
   const [resFormApt, setResFormApt] = useState<Apartment | null>(null);
   const [statementApt, setStatementApt] = useState<Apartment | null>(null);
 
@@ -238,6 +271,14 @@ export default function BuildingDetailPage() {
             >
               <Download className={`w-3.5 h-3.5 ${exportingPdf ? 'animate-bounce' : ''}`} />
               {exportingPdf ? 'Generando...' : 'Exportar deudas'}
+            </button>
+            <button
+              onClick={handleDeleteBuilding}
+              disabled={deletingBuilding}
+              className="flex items-center gap-1.5 border border-gray-200 text-slate-500 text-sm font-medium px-3.5 py-2 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors disabled:opacity-60"
+            >
+              {deletingBuilding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              Eliminar
             </button>
             {tab === 'apartamentos' && (
               <>
@@ -368,6 +409,13 @@ export default function BuildingDetailPage() {
                             >
                               + Res.
                             </button>
+                            <button
+                              onClick={() => handleDeleteApartment(apt)}
+                              title="Eliminar apartamento"
+                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -391,7 +439,7 @@ export default function BuildingDetailPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-100">
-                    {['Nombre', 'Tipo', 'Apartamento', 'Teléfono', 'Email'].map((h) => (
+                    {['Nombre', 'Tipo', 'Apartamento', 'Teléfono', 'Email', ''].map((h) => (
                       <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
@@ -404,6 +452,15 @@ export default function BuildingDetailPage() {
                       <td className="px-4 py-3 text-sm text-slate-600">Apt {r.apartment.number}</td>
                       <td className="px-4 py-3 text-sm text-slate-600">{r.phone ?? '—'}</td>
                       <td className="px-4 py-3 text-sm text-slate-600">{r.email ?? '—'}</td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => handleDeleteResident(r)}
+                          title="Eliminar residente"
+                          className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -1,9 +1,10 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Users } from 'lucide-react';
+import { Users, Trash2 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { api } from '@/lib/api';
+import { useToast } from '@/hooks/useToast';
 
 interface Building { id: string; name: string }
 interface Resident {
@@ -13,6 +14,7 @@ interface Resident {
 }
 
 export default function ResidentesPage() {
+  const toast = useToast();
   const [residents, setResidents] = useState<Resident[]>([]);
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [buildingFilter, setBuildingFilter] = useState('');
@@ -23,13 +25,24 @@ export default function ResidentesPage() {
     api.get<Building[]>('/buildings').then(setBuildings);
   }, []);
 
-  useEffect(() => {
+  const load = () => {
     setLoading(true);
     const url = buildingFilter ? `/residents?buildingId=${buildingFilter}` : '/residents';
     api.get<Resident[]>(url)
       .then(setResidents)
       .finally(() => setLoading(false));
-  }, [buildingFilter]);
+  };
+
+  useEffect(() => { load(); }, [buildingFilter]);
+
+  const handleDelete = async (r: Resident) => {
+    if (!confirm(`¿Eliminás a ${r.firstName} ${r.lastName}?`)) return;
+    try {
+      await api.delete(`/residents/${r.id}`);
+      toast.success('Residente eliminado');
+      load();
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error al eliminar'); }
+  };
 
   const filtered = residents.filter(r => {
     if (!search) return true;
@@ -79,7 +92,7 @@ export default function ResidentesPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
-                  {['Nombre', 'Tipo', 'Apartamento', 'Propiedad', 'Teléfono', 'Email', 'Estado'].map(h => (
+                  {['Nombre', 'Tipo', 'Apartamento', 'Propiedad', 'Teléfono', 'Email', 'Estado', ''].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
                   ))}
                 </tr>
@@ -97,6 +110,15 @@ export default function ResidentesPage() {
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${r.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-slate-500'}`}>
                         {r.isActive ? 'Activo' : 'Inactivo'}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => handleDelete(r)}
+                        title="Eliminar residente"
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </td>
                   </tr>
                 ))}

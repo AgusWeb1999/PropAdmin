@@ -1,11 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Home } from 'lucide-react';
+import { Home, Trash2 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { AccountStatement } from '@/components/apartments/AccountStatement';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
+import { useToast } from '@/hooks/useToast';
 
 interface Building { id: string; name: string }
 interface Apartment {
@@ -16,6 +17,7 @@ interface Apartment {
 }
 
 export default function ApartamentosPage() {
+  const toast = useToast();
   const [apartments, setApartments] = useState<Apartment[]>([]);
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [buildingFilter, setBuildingFilter] = useState('');
@@ -26,13 +28,24 @@ export default function ApartamentosPage() {
     api.get<Building[]>('/buildings').then(setBuildings);
   }, []);
 
-  useEffect(() => {
+  const load = () => {
     setLoading(true);
     const url = buildingFilter ? `/apartments?buildingId=${buildingFilter}` : '/apartments';
     api.get<Apartment[]>(url)
       .then(setApartments)
       .finally(() => setLoading(false));
-  }, [buildingFilter]);
+  };
+
+  useEffect(() => { load(); }, [buildingFilter]);
+
+  const handleDelete = async (apt: Apartment) => {
+    if (!confirm(`¿Eliminás el apartamento ${apt.number} (${apt.building.name})?`)) return;
+    try {
+      await api.delete(`/apartments/${apt.id}`);
+      toast.success('Apartamento eliminado');
+      load();
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error al eliminar'); }
+  };
 
   return (
     <>
@@ -92,12 +105,21 @@ export default function ApartamentosPage() {
                           : <span className="text-sm text-emerald-600">Al día</span>}
                       </td>
                       <td className="px-4 py-3">
-                        <button
-                          onClick={() => setStatementApt(apt)}
-                          className="text-xs text-slate-500 hover:text-slate-900 hover:bg-gray-100 px-2 py-1 rounded-md transition-colors"
-                        >
-                          Estado
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setStatementApt(apt)}
+                            className="text-xs text-slate-500 hover:text-slate-900 hover:bg-gray-100 px-2 py-1 rounded-md transition-colors"
+                          >
+                            Estado
+                          </button>
+                          <button
+                            onClick={() => handleDelete(apt)}
+                            title="Eliminar apartamento"
+                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
