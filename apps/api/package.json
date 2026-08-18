@@ -10,7 +10,6 @@
     "build": "prisma generate && npx tsc",
     "start": "node dist/server.js",
     "db:deploy": "prisma migrate deploy",
-    "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
