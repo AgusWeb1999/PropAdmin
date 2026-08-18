@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { FormField, inputClass } from '@/components/ui/FormField';
@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/useToast';
 import { formatPeriod } from '@/lib/utils';
 
 interface Deduction { label: string; amount: string }
+interface PastSettlement { period: string; deductionsDetail: Array<{ label: string; amount: number }> | null }
 
 interface Props {
   isOpen: boolean;
@@ -23,6 +24,18 @@ export function SettlementForm({ isOpen, onClose, onGenerated, rentalContractId,
   const [deductions, setDeductions] = useState<Deduction[]>([]);
   const [force, setForce] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Precarga las mismas deducciones del último período liquidado, para que
+  // solo haga falta cambiar los montos en vez de volver a escribir todo.
+  useEffect(() => {
+    if (!isOpen) return;
+    api.get<PastSettlement[]>(`/settlements/contract/${rentalContractId}`).then((settlements) => {
+      const last = settlements[0];
+      if (last?.deductionsDetail?.length) {
+        setDeductions(last.deductionsDetail.map((d) => ({ label: d.label, amount: String(d.amount) })));
+      }
+    });
+  }, [isOpen, rentalContractId]);
 
   const addDeduction = () => setDeductions((d) => [...d, { label: '', amount: '' }]);
   const removeDeduction = (i: number) => setDeductions((d) => d.filter((_, idx) => idx !== i));
